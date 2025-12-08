@@ -1,5 +1,3 @@
-const WEBHOOK_URL = 'https://ewgfdfgre.app.n8n.cloud/webhook/google-assistant';
-
 const turnOnBtn = document.getElementById('turnOnBtn');
 const turnOffBtn = document.getElementById('turnOffBtn');
 const statusDiv = document.getElementById('status');
@@ -9,7 +7,7 @@ async function sendCommand(command) {
         statusDiv.textContent = 'Sending command...';
         statusDiv.className = 'status';
 
-        const response = await fetch(WEBHOOK_URL, {
+        const response = await fetch('/api/control', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -17,11 +15,13 @@ async function sendCommand(command) {
             body: JSON.stringify({ command: command })
         });
 
-        if (response.ok) {
+        const data = await response.json();
+
+        if (data.success) {
             statusDiv.textContent = `✓ Successfully sent: "${command}"`;
             statusDiv.className = 'status success';
         } else {
-            statusDiv.textContent = `✗ Failed to send command (Status: ${response.status})`;
+            statusDiv.textContent = `✗ Failed: ${data.error}`;
             statusDiv.className = 'status error';
         }
     } catch (error) {
