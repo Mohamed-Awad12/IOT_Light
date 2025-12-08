@@ -5,14 +5,14 @@
 #define Relay1 D1
 
 /************ WiFi Settings ************/
-#define WLAN_SSID       "YOUR_WIFI_SSID"
-#define WLAN_PASS       "YOUR_WIFI_PASSWORD"
+#define WLAN_SSID       "WIFI_SSID"
+#define WLAN_PASS       "WIFI_PASSWORD"
 
 /************ Adafruit IO Settings ************/
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
-#define AIO_USERNAME    "YOUR_AIO_USERNAME"
-#define AIO_KEY         "YOUR_AIO_KEY"
+#define AIO_USERNAME    "AIO_USERNAME"
+#define AIO_KEY         "AIO_KEY"
 
 /************ Global State ************/
 WiFiClient client;
