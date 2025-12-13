@@ -32,7 +32,15 @@ app.post('/api/control', async (req, res) => {
         });
 
         if (response.ok) {
-            const data = await response.text();
+            const contentType = response.headers.get('content-type');
+            let data;
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
+            
             res.json({ success: true, message: `Command sent: ${command}`, data });
         } else {
             res.status(response.status).json({ 
@@ -47,6 +55,31 @@ app.post('/api/control', async (req, res) => {
             error: error.message 
         });
     }
+});
+
+// Endpoint to receive status updates from webhook
+app.post('/api/status', (req, res) => {
+    try {
+        const { response: statusMessage } = req.body;
+        console.log('Status received:', statusMessage);
+        
+        // Store the status temporarily (in production, use a proper state management)
+        app.locals.lastStatus = statusMessage;
+        
+        res.json({ success: true, message: 'Status received' });
+    } catch (error) {
+        console.error('Error receiving status:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Endpoint to get the latest status
+app.get('/api/status', (req, res) => {
+    const status = app.locals.lastStatus || null;
+    res.json({ status });
 });
 
 app.listen(PORT, () => {

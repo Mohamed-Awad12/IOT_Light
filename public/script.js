@@ -20,6 +20,9 @@ async function sendCommand(command) {
         if (data.success) {
             statusDiv.textContent = `✓ Successfully sent: "${command}"`;
             statusDiv.className = 'status success';
+            
+            // Check for status updates after a short delay
+            setTimeout(checkStatus, 1500);
         } else {
             statusDiv.textContent = `✗ Failed: ${data.error}`;
             statusDiv.className = 'status error';
@@ -27,6 +30,20 @@ async function sendCommand(command) {
     } catch (error) {
         statusDiv.textContent = `✗ Error: ${error.message}`;
         statusDiv.className = 'status error';
+    }
+}
+
+async function checkStatus() {
+    try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.status) {
+            statusDiv.textContent = `ℹ ${data.status}`;
+            statusDiv.className = 'status';
+        }
+    } catch (error) {
+        console.error('Error checking status:', error);
     }
 }
 
