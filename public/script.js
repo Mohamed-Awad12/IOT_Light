@@ -18,10 +18,11 @@ async function sendCommand(command) {
         const data = await response.json();
 
         if (data.success) {
-            statusDiv.textContent = `✓ Successfully sent: "${command}"`;
-            statusDiv.className = 'status success';
+            // Wait for the webhook to send back the status response
+            statusDiv.textContent = 'Waiting for response...';
+            statusDiv.className = 'status';
             
-            // Check for status updates after a short delay
+            // Check for status updates
             setTimeout(checkStatus, 1500);
         } else {
             statusDiv.textContent = `✗ Failed: ${data.error}`;
@@ -39,7 +40,11 @@ async function checkStatus() {
         const data = await response.json();
         
         if (data.status) {
-            statusDiv.textContent = `${data.status}`;
+            statusDiv.textContent = data.status;
+            statusDiv.className = 'status success';
+        } else {
+            // If no status received yet, keep waiting
+            statusDiv.textContent = 'Waiting for response...';
             statusDiv.className = 'status';
         }
     } catch (error) {
