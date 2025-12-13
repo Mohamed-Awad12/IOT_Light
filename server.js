@@ -23,6 +23,9 @@ app.post('/api/control', async (req, res) => {
             return res.status(400).json({ error: 'Command is required' });
         }
 
+        // Clear old status before sending new command
+        app.locals.lastStatus = null;
+
         const response = await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: {
@@ -79,6 +82,8 @@ app.post('/api/status', (req, res) => {
 // Endpoint to get the latest status
 app.get('/api/status', (req, res) => {
     const status = app.locals.lastStatus || null;
+    // Clear the status after reading it
+    app.locals.lastStatus = null;
     res.json({ status });
 });
 

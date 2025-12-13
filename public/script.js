@@ -39,7 +39,7 @@ async function checkStatus() {
         const data = await response.json();
         
         if (data.status) {
-            statusDiv.textContent = `ℹ ${data.status}`;
+            statusDiv.textContent = `${data.status}`;
             statusDiv.className = 'status';
         }
     } catch (error) {
