@@ -7,6 +7,27 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // Centralized webhook URL (n8n)
 const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook/google-assistant';
+// API key for protecting sensitive endpoints
+const API_SECRET = process.env.API_SECRET;
+
+// Middleware to verify API key
+const verifyApiKey = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+    
+    if (!API_SECRET) {
+        // If no secret is configured, allow access (for development)
+        return next();
+    }
+    
+    if (!apiKey || apiKey !== API_SECRET) {
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Unauthorized: Invalid or missing API key' 
+        });
+    }
+    
+    next();
+};
 
 
 // Parse JSON bodies and serve static files
@@ -16,6 +37,20 @@ app.use(express.static('public'));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Provide API key to same-origin frontend requests only
+app.get('/api/config', (req, res) => {
+    // Only provide the key if the request comes from the same origin
+    const referer = req.headers.referer || '';
+    const host = req.headers.host || '';
+    
+    // Check if request is from same origin
+    if (referer.includes(host) || !API_SECRET) {
+        res.json({ apiKey: API_SECRET || null });
+    } else {
+        res.status(403).json({ error: 'Forbidden' });
+    }
 });
 
 
@@ -93,9 +128,8 @@ app.get('/api/status', (req, res) => {
     res.json({ status });
 });
 
-// Endpoint to request history (called by frontend)
-// Request history from webhook and return immediately
-app.use('/api/history/request', async (req, res) => {
+// Endpoint to request history (called by frontend) - Protected with API key
+app.post('/api/history/request', verifyApiKey, async (req, res) => {
     try {
         // Adafruit IO API - requires X-AIO-Key header for authentication
         const AIO_USERNAME = process.env.AIO_USERNAME;

@@ -1,15 +1,40 @@
 const historyContent = document.getElementById('historyContent');
 const refreshBtn = document.getElementById('refreshBtn');
 
+let apiKey = null;
+
+// Fetch API key from server (only works from same origin)
+async function getApiKey() {
+    try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        apiKey = data.apiKey;
+    } catch (error) {
+        console.error('Failed to get API key:', error);
+    }
+}
+
 async function loadHistory() {
     historyContent.innerHTML = '<div class="loading">Loading history...</div>';
     
+    // Ensure we have the API key
+    if (!apiKey) {
+        await getApiKey();
+    }
+    
     try {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add API key if available
+        if (apiKey) {
+            headers['X-API-Key'] = apiKey;
+        }
+        
         const response = await fetch('/api/history/request', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: headers
         });
 
         const result = await response.json();
