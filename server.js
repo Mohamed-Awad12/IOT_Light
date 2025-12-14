@@ -6,7 +6,7 @@ const fetch = global.fetch || require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 // Centralized webhook URL (n8n)
-const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook-test/google-assistant';
+const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook/google-assistant';
 
 
 // Parse JSON bodies and serve static files
