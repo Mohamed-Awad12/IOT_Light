@@ -80,7 +80,6 @@ historyBtn.addEventListener('click', async () => {
         if (result.success) {
             // Wait for the webhook to send back the history to POST /api/history
             historyDisplay.textContent = 'Waiting for history data...';
-            // Poll multiple times with increasing delays
             pollForHistory(0);
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
@@ -92,8 +91,8 @@ historyBtn.addEventListener('click', async () => {
     }
 });
 
-let historyPollCount = 0;
 const MAX_HISTORY_POLLS = 10;
+const POLL_INTERVAL = 1000; // 1 second
 
 function pollForHistory(attempt) {
     if (attempt >= MAX_HISTORY_POLLS) {
@@ -114,6 +113,9 @@ function pollForHistory(attempt) {
                 } else {
                     historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.history + '</pre>';
                 }
+                
+                // Clear the history on server after successful display
+                fetch('/api/history', { method: 'DELETE' });
             } else {
                 // Continue polling
                 historyDisplay.textContent = `Waiting for history data... (${attempt + 1}/${MAX_HISTORY_POLLS})`;
@@ -123,7 +125,7 @@ function pollForHistory(attempt) {
             historyDisplay.textContent = `Error loading history: ${error.message}`;
             historyDisplay.className = 'history-display error';
         }
-    }, 1000); // Poll every 1 second
+    }, POLL_INTERVAL);
 }
 
 async function checkHistoryStatus() {

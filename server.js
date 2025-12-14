@@ -142,9 +142,14 @@ app.post('/api/history', (req, res) => {
 // Endpoint to get the latest history
 app.get('/api/history', (req, res) => {
     const history = app.locals.lastHistory || null;
-    // Clear the history after reading it
-    app.locals.lastHistory = null;
+    // Don't clear the history automatically - let frontend clear it
     res.json({ history });
+});
+
+// Endpoint to clear history
+app.delete('/api/history', (req, res) => {
+    app.locals.lastHistory = null;
+    res.json({ success: true, message: 'History cleared' });
 });
 
 app.listen(PORT, () => {
