@@ -95,7 +95,7 @@ app.get('/api/status', (req, res) => {
 
 // Endpoint to request history (called by frontend)
 // Request history from webhook and return immediately
-app.post('/api/history/request', async (req, res) => {
+app.use('/api/history/request', async (req, res) => {
     try {
         // Adafruit IO API - requires X-AIO-Key header for authentication
         const AIO_USERNAME = process.env.AIO_USERNAME;
@@ -136,39 +136,8 @@ app.post('/api/history/request', async (req, res) => {
     }
 });
 
-// Endpoint to receive history data from webhook
-// Receive history pushed from webhook (optional path)
-app.post('/api/history', (req, res) => {
-    try {
-        const { response: historyData } = req.body;
-        console.log('History received:', historyData);
-        
-        // Store the history temporarily
-        app.locals.lastHistory = historyData;
-        
-        res.json({ success: true, message: 'History received' });
-    } catch (error) {
-        console.error('Error receiving history:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
 
-// Get the latest history without clearing (frontend clears when done)
-app.get('/api/history', (req, res) => {
-    const history = app.locals.lastHistory || null;
-    // Don't clear the history automatically - let frontend clear it
-    res.json({ history });
-});
 
-// Endpoint to clear history
-// Explicitly clear stored history
-app.delete('/api/history', (req, res) => {
-    app.locals.lastHistory = null;
-    res.json({ success: true, message: 'History cleared' });
-});
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
