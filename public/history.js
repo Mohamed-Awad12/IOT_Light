@@ -98,6 +98,8 @@ async function login() {
         
         const result = await response.json();
         
+        console.log('Login response:', result); // Debug log
+        
         if (result.success) {
             sessionToken = result.sessionToken;
             sessionStorage.setItem('historySessionToken', sessionToken);

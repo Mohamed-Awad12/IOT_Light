@@ -86,6 +86,7 @@ app.post('/api/auth/login', (req, res) => {
     }
     
     const attemptData = failedLoginAttempts.get(clientIp);
+    console.log(failedLoginAttempts);
     if (attemptData) {
         const now = Date.now();
         if (attemptData.count >= MAX_LOGIN_ATTEMPTS && now < attemptData.lockoutUntil) {
@@ -128,6 +129,8 @@ app.post('/api/auth/login', (req, res) => {
                     retryAfter: LOCKOUT_DURATION / 1000
                 });
             } else {
+                
+                
                 res.status(401).json({ 
                     success: false, 
                     error: `Invalid password. ${attemptsRemaining} attempts remaining.`
