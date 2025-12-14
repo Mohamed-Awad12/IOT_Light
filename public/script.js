@@ -1,4 +1,3 @@
-// UI Elements
 const turnOnBtn = document.getElementById('turnOnBtn');
 const turnOffBtn = document.getElementById('turnOffBtn');
 const statusDiv = document.getElementById('status');
@@ -19,18 +18,16 @@ async function sendCommand(command) {
         const data = await response.json();
 
         if (data.success) {
-            // Wait for the webhook to send back the status response
             statusDiv.textContent = 'Waiting for response...';
             statusDiv.className = 'status';
             
-            // Check for status updates
             setTimeout(checkStatus, 1500);
         } else {
-            statusDiv.textContent = `✗ Failed: ${data.error}`;
+            statusDiv.textContent = `Failed: ${data.error}`;
             statusDiv.className = 'status error';
         }
     } catch (error) {
-        statusDiv.textContent = `✗ Error: ${error.message}`;
+        statusDiv.textContent = `Error: ${error.message}`;
         statusDiv.className = 'status error';
     }
 }
@@ -44,7 +41,6 @@ async function checkStatus() {
             statusDiv.textContent = data.status;
             statusDiv.className = 'status success';
         } else {
-            // If no status received yet, keep waiting
             statusDiv.textContent = 'Waiting for response...';
             statusDiv.className = 'status';
         }

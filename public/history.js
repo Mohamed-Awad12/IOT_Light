@@ -35,7 +35,7 @@ function displayHistoryTable(data) {
                         <th>#</th>
                         <th>Date & Time</th>
                         <th>Status</th>
-                        <th>Feed ID</th>
+                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,14 +56,14 @@ function displayHistoryTable(data) {
         
         const isOn = item.value === '1' || item.value === 1;
         const statusClass = isOn ? 'status-on' : 'status-off';
-        const statusText = isOn ? '💡 ON' : '🌑 OFF';
+        const statusText = isOn ? 'ON' : 'OFF';
         
         tableHTML += `
             <tr>
                 <td>${index + 1}</td>
-                <td>${formattedDate}<br><small>${formattedTime}</small></td>
-                <td class="${statusClass}">${statusText}</td>
-                <td><small>${item.id || 'N/A'}</small></td>
+                <td class="date-cell">${formattedDate}<br><small style="color: #888;">${formattedTime}</small></td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td><span class="value-cell">${item.value}</span></td>
             </tr>
         `;
     });
@@ -72,9 +72,9 @@ function displayHistoryTable(data) {
                 </tbody>
             </table>
         </div>
-        <p style="text-align: center; margin-top: 15px; color: #666;">
-            Showing ${data.length} entries
-        </p>
+        <div class="entry-count">
+            📊 Showing <strong>${data.length}</strong> recent entries
+        </div>
     `;
     
     historyContent.innerHTML = tableHTML;
