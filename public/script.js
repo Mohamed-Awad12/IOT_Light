@@ -78,12 +78,9 @@ historyBtn.addEventListener('click', async () => {
         const result = await response.json();
 
         if (result.success) {
-            // Display the history data
-            if (typeof result.data === 'object') {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(result.data, null, 2) + '</pre>';
-            } else {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + result.data + '</pre>';
-            }
+            // Wait for the webhook to send back the history to /api/status
+            historyDisplay.textContent = 'Waiting for history data...';
+            setTimeout(checkHistoryStatus, 1500);
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
             historyDisplay.className = 'history-display error';
@@ -93,3 +90,24 @@ historyBtn.addEventListener('click', async () => {
         historyDisplay.className = 'history-display error';
     }
 });
+
+async function checkHistoryStatus() {
+    try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.status) {
+            // Display the history data
+            if (typeof data.status === 'object') {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.status, null, 2) + '</pre>';
+            } else {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.status + '</pre>';
+            }
+        } else {
+            historyDisplay.textContent = 'No history data received yet';
+        }
+    } catch (error) {
+        historyDisplay.textContent = `Error loading history: ${error.message}`;
+        historyDisplay.className = 'history-display error';
+    }
+}

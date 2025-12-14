@@ -90,6 +90,9 @@ app.get('/api/status', (req, res) => {
 // Endpoint to get history
 app.post('/api/history', async (req, res) => {
     try {
+        // Clear old status before requesting history
+        app.locals.lastStatus = null;
+
         const response = await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: {
@@ -99,16 +102,9 @@ app.post('/api/history', async (req, res) => {
         });
 
         if (response.ok) {
-            const contentType = response.headers.get('content-type');
-            let data;
-            
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                data = await response.text();
-            }
-            
-            res.json({ success: true, data });
+            // Just acknowledge that the request was sent
+            // The actual history will be sent to /api/status by the webhook
+            res.json({ success: true, message: 'History request sent' });
         } else {
             res.status(response.status).json({ 
                 success: false, 
