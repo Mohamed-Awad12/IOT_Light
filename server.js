@@ -1,20 +1,22 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
-// Ensure fetch is available on older Node versions
+
 const fetch = global.fetch || require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// Centralized webhook URL (n8n)
+
 const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook/google-assistant';
-// Password for accessing history page
 const HISTORY_PASSWORD = process.env.HISTORY_PASSWORD;
 
-// Store valid session tokens (in production, use Redis or database)
 const validSessions = new Map();
 
-// Clean up expired sessions every 10 minutes
+const failedLoginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 3 * 60 * 1000;
+
+
 setInterval(() => {
     const now = Date.now();
     for (const [token, data] of validSessions) {
@@ -22,12 +24,17 @@ setInterval(() => {
             validSessions.delete(token);
         }
     }
+
+    for (const [ip, data] of failedLoginAttempts) {
+        if (now > data.lockoutUntil) {
+            failedLoginAttempts.delete(ip);
+        }
+    }
 }, 10 * 60 * 1000);
 
-// Middleware to verify session token
+
 const verifySession = (req, res, next) => {
     if (!HISTORY_PASSWORD) {
-        // If no password is configured, allow access (for development)
         return next();
     }
     
@@ -53,7 +60,7 @@ const verifySession = (req, res, next) => {
 };
 
 
-// Parse JSON bodies and serve static files
+
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -62,32 +69,75 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Check if history password is required
+
 app.get('/api/auth/status', (req, res) => {
     res.json({ 
         requiresAuth: !!HISTORY_PASSWORD,
-        isLoggedIn: false // Frontend will check session separately
+        isLoggedIn: false 
     });
 });
 
-// Login endpoint - validates password and returns session token
 app.post('/api/auth/login', (req, res) => {
     const { password } = req.body;
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     
     if (!HISTORY_PASSWORD) {
-        // No password configured, return a dummy session
         return res.json({ success: true, sessionToken: 'dev-mode' });
     }
     
-    if (password !== HISTORY_PASSWORD) {
-        // Add delay to prevent brute force
-        return setTimeout(() => {
-            res.status(401).json({ 
+    const attemptData = failedLoginAttempts.get(clientIp);
+    if (attemptData) {
+        const now = Date.now();
+        if (attemptData.count >= MAX_LOGIN_ATTEMPTS && now < attemptData.lockoutUntil) {
+            const remainingTime = Math.ceil((attemptData.lockoutUntil - now) / 1000);
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            return res.status(429).json({ 
                 success: false, 
-                error: 'Invalid password' 
+                error: `Too many failed attempts. Try again in ${minutes}m ${seconds}s`,
+                lockedOut: true,
+                retryAfter: remainingTime
             });
+        }
+
+        if (now >= attemptData.lockoutUntil) {
+            failedLoginAttempts.delete(clientIp);
+        }
+    }
+    
+    if (password !== HISTORY_PASSWORD) {
+       
+        const currentAttempts = failedLoginAttempts.get(clientIp) || { count: 0, lockoutUntil: 0 };
+        currentAttempts.count += 1;
+        
+        if (currentAttempts.count >= MAX_LOGIN_ATTEMPTS) {
+            currentAttempts.lockoutUntil = Date.now() + LOCKOUT_DURATION;
+        }
+        
+        failedLoginAttempts.set(clientIp, currentAttempts);
+        
+        const attemptsRemaining = MAX_LOGIN_ATTEMPTS - currentAttempts.count;
+        
+
+        return setTimeout(() => {
+            if (currentAttempts.count >= MAX_LOGIN_ATTEMPTS) {
+                res.status(429).json({ 
+                    success: false, 
+                    error: 'Too many failed attempts. Locked out for 3 minutes.',
+                    lockedOut: true,
+                    retryAfter: LOCKOUT_DURATION / 1000
+                });
+            } else {
+                res.status(401).json({ 
+                    success: false, 
+                    error: `Invalid password. ${attemptsRemaining} attempts remaining.`
+                });
+            }
         }, 1000);
     }
+    
+    // Successful login - clear any failed attempts
+    failedLoginAttempts.delete(clientIp);
     
     // Generate secure session token
     const sessionToken = crypto.randomBytes(32).toString('hex');
