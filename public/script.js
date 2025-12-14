@@ -1,3 +1,4 @@
+// UI Elements
 const turnOnBtn = document.getElementById('turnOnBtn');
 const turnOffBtn = document.getElementById('turnOffBtn');
 const historyBtn = document.getElementById('historyBtn');
@@ -62,6 +63,7 @@ turnOffBtn.addEventListener('click', () => {
     sendCommand('turn off the lights');
 });
 
+// History viewer
 historyBtn.addEventListener('click', async () => {
     try {
         historyDisplay.textContent = 'Loading history...';
@@ -84,6 +86,8 @@ historyBtn.addEventListener('click', async () => {
             } else {
                 historyDisplay.innerHTML = '<h3>History</h3><pre>' + result.data + '</pre>';
             }
+            // Clear any previously stored server history (cleanup)
+            fetch('/api/history', { method: 'DELETE' });
         } else if (result.success) {
             historyDisplay.textContent = 'No history data available';
         } else {
@@ -96,8 +100,9 @@ historyBtn.addEventListener('click', async () => {
     }
 });
 
-const MAX_HISTORY_POLLS = 15; // Increased to 15 attempts
-const POLL_INTERVAL = 12000; // Increased to 2 seconds
+// Polling constants (unused in direct return flow; kept for fallback)
+const MAX_HISTORY_POLLS = 10;
+const POLL_INTERVAL = 2000;
 
 function pollForHistory(attempt) {
     if (attempt >= MAX_HISTORY_POLLS) {

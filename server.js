@@ -1,11 +1,15 @@
 const express = require('express');
 const path = require('path');
+// Ensure fetch is available on older Node versions
+const fetch = global.fetch || require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Centralized webhook URL (n8n)
 const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook-test/google-assistant';
 
 
+// Parse JSON bodies and serve static files
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -15,6 +19,7 @@ app.get('/', (req, res) => {
 });
 
 
+// Send control command to webhook (turn on/off)
 app.post('/api/control', async (req, res) => {
     try {
         const { command } = req.body;
@@ -61,6 +66,7 @@ app.post('/api/control', async (req, res) => {
 });
 
 // Endpoint to receive status updates from webhook
+// Receive status updates from webhook
 app.post('/api/status', (req, res) => {
     try {
         const { response: statusMessage } = req.body;
@@ -79,7 +85,7 @@ app.post('/api/status', (req, res) => {
     }
 });
 
-// Endpoint to get the latest status
+// Get the latest status (one-shot)
 app.get('/api/status', (req, res) => {
     const status = app.locals.lastStatus || null;
     // Clear the status after reading it
@@ -88,6 +94,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // Endpoint to request history (called by frontend)
+// Request history from webhook and return immediately
 app.post('/api/history/request', async (req, res) => {
     try {
         const response = await fetch(WEBHOOK_URL, {
@@ -126,6 +133,7 @@ app.post('/api/history/request', async (req, res) => {
 });
 
 // Endpoint to receive history data from webhook
+// Receive history pushed from webhook (optional path)
 app.post('/api/history', (req, res) => {
     try {
         const { response: historyData } = req.body;
@@ -144,7 +152,7 @@ app.post('/api/history', (req, res) => {
     }
 });
 
-// Endpoint to get the latest history
+// Get the latest history without clearing (frontend clears when done)
 app.get('/api/history', (req, res) => {
     const history = app.locals.lastHistory || null;
     // Don't clear the history automatically - let frontend clear it
@@ -152,6 +160,7 @@ app.get('/api/history', (req, res) => {
 });
 
 // Endpoint to clear history
+// Explicitly clear stored history
 app.delete('/api/history', (req, res) => {
     app.locals.lastHistory = null;
     res.json({ success: true, message: 'History cleared' });
