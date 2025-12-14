@@ -79,17 +79,10 @@ historyBtn.addEventListener('click', async () => {
 
         const result = await response.json();
 
-        if (result.success && result.data) {
-            // Display the history data directly from response
-            if (typeof result.data === 'object') {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(result.data, null, 2) + '</pre>';
-            } else {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + result.data + '</pre>';
-            }
-            // Clear any previously stored server history (cleanup)
-            fetch('/api/history', { method: 'DELETE' });
-        } else if (result.success) {
-            historyDisplay.textContent = 'No history data available';
+        if (result.success) {
+            // Webhook will POST history to /api/history
+            historyDisplay.textContent = 'Waiting for history data...';
+            pollForHistory(0);
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
             historyDisplay.className = 'history-display error';
