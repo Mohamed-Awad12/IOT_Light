@@ -97,12 +97,16 @@ app.get('/api/status', (req, res) => {
 // Request history from webhook and return immediately
 app.post('/api/history/request', async (req, res) => {
     try {
-        const response = await fetch("https://io.adafruit.com/api/v2/awad12/feeds/light/data?limit=30", {
+        // Adafruit IO API - requires X-AIO-Key header for authentication
+        const AIO_USERNAME = process.env.AIO_USERNAME;
+        const AIO_KEY = process.env.AIO_KEY ; // Set this in environment variables
+        
+        const response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/light/data?limit=30`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
+                'X-AIO-Key': AIO_KEY,
             },
-           
         });
 
         if (response.ok) {
