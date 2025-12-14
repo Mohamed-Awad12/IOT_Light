@@ -77,10 +77,15 @@ historyBtn.addEventListener('click', async () => {
 
         const result = await response.json();
 
-        if (result.success) {
-            // Wait for the webhook to send back the history to POST /api/history
-            historyDisplay.textContent = 'Waiting for history data...';
-            pollForHistory(0);
+        if (result.success && result.data) {
+            // Display the history data directly from response
+            if (typeof result.data === 'object') {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(result.data, null, 2) + '</pre>';
+            } else {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + result.data + '</pre>';
+            }
+        } else if (result.success) {
+            historyDisplay.textContent = 'No history data available';
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
             historyDisplay.className = 'history-display error';
