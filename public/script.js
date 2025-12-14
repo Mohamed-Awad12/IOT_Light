@@ -79,10 +79,11 @@ historyBtn.addEventListener('click', async () => {
 
         const result = await response.json();
 
-        if (result.success) {
-            // Webhook will POST history to /api/history
-            historyDisplay.textContent = 'Waiting for history data...';
-            pollForHistory(0);
+        if (result.success && result.data) {
+            // Display history data directly from response
+            displayHistory(result.data);
+        } else if (result.success) {
+            historyDisplay.textContent = 'No history data available';
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
             historyDisplay.className = 'history-display error';
@@ -93,66 +94,21 @@ historyBtn.addEventListener('click', async () => {
     }
 });
 
-// Polling constants (unused in direct return flow; kept for fallback)
-const MAX_HISTORY_POLLS = 10;
-const POLL_INTERVAL = 2000;
-
-function pollForHistory(attempt) {
-    if (attempt >= MAX_HISTORY_POLLS) {
-        historyDisplay.textContent = 'History data not received. Please try again.';
-        historyDisplay.className = 'history-display error';
-        return;
-    }
-    
-    // Start polling immediately on first attempt, then use interval
-    const delay = attempt === 0 ? 500 : POLL_INTERVAL;
-    
-    setTimeout(async () => {
-        try {
-            const response = await fetch('/api/history');
-            const data = await response.json();
-            
-            if (data.history) {
-                // Display the history data
-                if (typeof data.history === 'object') {
-                    historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.history, null, 2) + '</pre>';
-                } else {
-                    historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.history + '</pre>';
-                }
-                
-                // Clear the history on server after successful display
-                fetch('/api/history', { method: 'DELETE' });
-            } else {
-                // Continue polling
-                historyDisplay.textContent = `Waiting for history data... (${attempt + 1}/${MAX_HISTORY_POLLS})`;
-                pollForHistory(attempt + 1);
-            }
-        } catch (error) {
-            historyDisplay.textContent = `Error loading history: ${error.message}`;
-            historyDisplay.className = 'history-display error';
-        }
-    }, delay);
-
-}
-
-async function checkHistoryStatus() {
-    try {
-        const response = await fetch('/api/history');
-        const data = await response.json();
-        console.log(data);
-        
-        if (data.history) {
-            // Display the history data
-            if (typeof data.history === 'object') {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.history, null, 2) + '</pre>';
-            } else {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.history + '</pre>';
-            }
-        } else {
-            historyDisplay.textContent = 'No history data received yet';
-        }
-    } catch (error) {
-        historyDisplay.textContent = `Error loading history: ${error.message}`;
-        historyDisplay.className = 'history-display error';
+// Helper function to display history data
+function displayHistory(data) {
+    if (Array.isArray(data)) {
+        // Format Adafruit IO data nicely
+        const formatted = data.map(item => {
+            const date = new Date(item.created_at).toLocaleString();
+            const value = item.value === '1' ? 'ON' : item.value === '0' ? 'OFF' : item.value;
+            return `${date} - Light: ${value}`;
+        }).join('\n');
+        historyDisplay.innerHTML = '<h3>History</h3><pre>' + formatted + '</pre>';
+    } else if (typeof data === 'object') {
+        historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    } else {
+        historyDisplay.innerHTML = '<h3>History</h3><pre>' + data + '</pre>';
     }
 }
+
+
