@@ -34,7 +34,7 @@ async function sendCommand(command) {
 
 async function checkStatus() {
     try {
-        const response = await fetch('https://iot-light-pxx6srxvf-mohamed-awad12s-projects.vercel.app/api/status');
+        const response = await fetch('/api/status');
         const data = await response.json();
         
         if (data.status) {
