@@ -97,7 +97,7 @@ historyBtn.addEventListener('click', async () => {
 });
 
 const MAX_HISTORY_POLLS = 15; // Increased to 15 attempts
-const POLL_INTERVAL = 2000; // Increased to 2 seconds
+const POLL_INTERVAL = 12000; // Increased to 2 seconds
 
 function pollForHistory(attempt) {
     if (attempt >= MAX_HISTORY_POLLS) {
