@@ -97,12 +97,12 @@ app.get('/api/status', (req, res) => {
 // Request history from webhook and return immediately
 app.post('/api/history/request', async (req, res) => {
     try {
-        const response = await fetch(WEBHOOK_URL, {
-            method: 'POST',
+        const response = await fetch("https://io.adafruit.com/api/v2/awad12/feeds/light/data?limit=30", {
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ command: 'history' })
+           
         });
 
         if (response.ok) {
