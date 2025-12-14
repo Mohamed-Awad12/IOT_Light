@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 // Ensure fetch is available on older Node versions
 const fetch = global.fetch || require('node-fetch');
 
@@ -7,22 +8,44 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // Centralized webhook URL (n8n)
 const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook/google-assistant';
-// API key for protecting sensitive endpoints
-const API_SECRET = process.env.API_SECRET;
+// Password for accessing history page
+const HISTORY_PASSWORD = process.env.HISTORY_PASSWORD;
 
-// Middleware to verify API key
-const verifyApiKey = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'] || req.query.apiKey;
-    
-    if (!API_SECRET) {
-        // If no secret is configured, allow access (for development)
+// Store valid session tokens (in production, use Redis or database)
+const validSessions = new Map();
+
+// Clean up expired sessions every 10 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of validSessions) {
+        if (now > data.expiresAt) {
+            validSessions.delete(token);
+        }
+    }
+}, 10 * 60 * 1000);
+
+// Middleware to verify session token
+const verifySession = (req, res, next) => {
+    if (!HISTORY_PASSWORD) {
+        // If no password is configured, allow access (for development)
         return next();
     }
     
-    if (!apiKey || apiKey !== API_SECRET) {
+    const sessionToken = req.headers['x-session-token'];
+    
+    if (!sessionToken || !validSessions.has(sessionToken)) {
         return res.status(401).json({ 
             success: false, 
-            error: 'Unauthorized: Invalid or missing API key' 
+            error: 'Unauthorized: Please login first' 
+        });
+    }
+    
+    const session = validSessions.get(sessionToken);
+    if (Date.now() > session.expiresAt) {
+        validSessions.delete(sessionToken);
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Session expired: Please login again' 
         });
     }
     
@@ -39,18 +62,56 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Provide API key to same-origin frontend requests only
-app.get('/api/config', (req, res) => {
-    // Only provide the key if the request comes from the same origin
-    const referer = req.headers.referer || '';
-    const host = req.headers.host || '';
+// Check if history password is required
+app.get('/api/auth/status', (req, res) => {
+    res.json({ 
+        requiresAuth: !!HISTORY_PASSWORD,
+        isLoggedIn: false // Frontend will check session separately
+    });
+});
+
+// Login endpoint - validates password and returns session token
+app.post('/api/auth/login', (req, res) => {
+    const { password } = req.body;
     
-    // Check if request is from same origin
-    if (referer.includes(host) || !API_SECRET) {
-        res.json({ apiKey: API_SECRET || null });
-    } else {
-        res.status(403).json({ error: 'Forbidden' });
+    if (!HISTORY_PASSWORD) {
+        // No password configured, return a dummy session
+        return res.json({ success: true, sessionToken: 'dev-mode' });
     }
+    
+    if (password !== HISTORY_PASSWORD) {
+        // Add delay to prevent brute force
+        return setTimeout(() => {
+            res.status(401).json({ 
+                success: false, 
+                error: 'Invalid password' 
+            });
+        }, 1000);
+    }
+    
+    // Generate secure session token
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    
+    // Store session with 1 hour expiry
+    validSessions.set(sessionToken, {
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour
+    });
+    
+    res.json({ 
+        success: true, 
+        sessionToken,
+        expiresIn: 3600 // seconds
+    });
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+    const sessionToken = req.headers['x-session-token'];
+    if (sessionToken) {
+        validSessions.delete(sessionToken);
+    }
+    res.json({ success: true });
 });
 
 
@@ -128,8 +189,8 @@ app.get('/api/status', (req, res) => {
     res.json({ status });
 });
 
-// Endpoint to request history (called by frontend) - Protected with API key
-app.post('/api/history/request', verifyApiKey, async (req, res) => {
+// Endpoint to request history (called by frontend) - Protected with session auth
+app.post('/api/history/request', verifySession, async (req, res) => {
     try {
         // Adafruit IO API - requires X-AIO-Key header for authentication
         const AIO_USERNAME = process.env.AIO_USERNAME;

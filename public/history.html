@@ -230,17 +230,94 @@
                 width: 100%;
             }
         }
+        
+        /* Login form styles */
+        .login-form {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-form h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .login-form input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+        }
+        
+        .login-error {
+            color: #dc3545;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+        
+        .logout-btn:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
     <div class="container history-container">
         <h1>📜 Light Control History</h1>
-        <div class="btn-group">
-            <a href="/" class="btn back-btn">← Back to Control</a>
-            <button id="refreshBtn" class="btn refresh-btn">🔄 Refresh</button>
+        
+        <!-- Login Form -->
+        <div id="loginSection" class="hidden">
+            <div class="login-form">
+                <h2>🔐 Authentication Required</h2>
+                <p style="color: #666; margin-bottom: 15px;">Enter password to view history</p>
+                <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password">
+                <button id="loginBtn" class="btn login-btn">Login</button>
+                <div id="loginError" class="login-error hidden"></div>
+            </div>
+            <div class="btn-group" style="margin-top: 20px;">
+                <a href="/" class="btn back-btn">← Back to Control</a>
+            </div>
         </div>
-        <div id="historyContent">
-            <div class="loading">Loading history...</div>
+        
+        <!-- History Content -->
+        <div id="historySection" class="hidden">
+            <div class="btn-group">
+                <a href="/" class="btn back-btn">← Back to Control</a>
+                <button id="refreshBtn" class="btn refresh-btn">🔄 Refresh</button>
+                <button id="logoutBtn" class="btn logout-btn">🚪 Logout</button>
+            </div>
+            <div id="historyContent">
+                <div class="loading">Loading history...</div>
+            </div>
         </div>
     </div>
     <script src="history.js"></script>
