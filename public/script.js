@@ -68,7 +68,7 @@ historyBtn.addEventListener('click', async () => {
         historyDisplay.style.display = 'block';
         historyDisplay.className = 'history-display';
 
-        const response = await fetch('/api/history', {
+        const response = await fetch('/api/history/request', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ historyBtn.addEventListener('click', async () => {
         const result = await response.json();
 
         if (result.success) {
-            // Wait for the webhook to send back the history to /api/status
+            // Wait for the webhook to send back the history to POST /api/history
             historyDisplay.textContent = 'Waiting for history data...';
             setTimeout(checkHistoryStatus, 1500);
         } else {
@@ -93,15 +93,15 @@ historyBtn.addEventListener('click', async () => {
 
 async function checkHistoryStatus() {
     try {
-        const response = await fetch('/api/status');
+        const response = await fetch('/api/history');
         const data = await response.json();
         
-        if (data.status) {
+        if (data.history) {
             // Display the history data
-            if (typeof data.status === 'object') {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.status, null, 2) + '</pre>';
+            if (typeof data.history === 'object') {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.history, null, 2) + '</pre>';
             } else {
-                historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.status + '</pre>';
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.history + '</pre>';
             }
         } else {
             historyDisplay.textContent = 'No history data received yet';

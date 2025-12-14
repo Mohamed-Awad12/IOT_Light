@@ -87,11 +87,11 @@ app.get('/api/status', (req, res) => {
     res.json({ status });
 });
 
-// Endpoint to get history
-app.post('/api/history', async (req, res) => {
+// Endpoint to request history (called by frontend)
+app.post('/api/history/request', async (req, res) => {
     try {
-        // Clear old status before requesting history
-        app.locals.lastStatus = null;
+        // Clear old history before requesting new one
+        app.locals.lastHistory = null;
 
         const response = await fetch(WEBHOOK_URL, {
             method: 'POST',
@@ -103,7 +103,7 @@ app.post('/api/history', async (req, res) => {
 
         if (response.ok) {
             // Just acknowledge that the request was sent
-            // The actual history will be sent to /api/status by the webhook
+            // The actual history will be sent to POST /api/history by the webhook
             res.json({ success: true, message: 'History request sent' });
         } else {
             res.status(response.status).json({ 
@@ -112,12 +112,39 @@ app.post('/api/history', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Error fetching history:', error);
+        console.error('Error requesting history:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 
         });
     }
+});
+
+// Endpoint to receive history data from webhook
+app.post('/api/history', (req, res) => {
+    try {
+        const { response: historyData } = req.body;
+        console.log('History received:', historyData);
+        
+        // Store the history temporarily
+        app.locals.lastHistory = historyData;
+        
+        res.json({ success: true, message: 'History received' });
+    } catch (error) {
+        console.error('Error receiving history:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Endpoint to get the latest history
+app.get('/api/history', (req, res) => {
+    const history = app.locals.lastHistory || null;
+    // Clear the history after reading it
+    app.locals.lastHistory = null;
+    res.json({ history });
 });
 
 app.listen(PORT, () => {
