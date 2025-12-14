@@ -91,8 +91,8 @@ historyBtn.addEventListener('click', async () => {
     }
 });
 
-const MAX_HISTORY_POLLS = 10;
-const POLL_INTERVAL = 1000; // 1 second
+const MAX_HISTORY_POLLS = 15; // Increased to 15 attempts
+const POLL_INTERVAL = 2000; // Increased to 2 seconds
 
 function pollForHistory(attempt) {
     if (attempt >= MAX_HISTORY_POLLS) {
@@ -100,6 +100,9 @@ function pollForHistory(attempt) {
         historyDisplay.className = 'history-display error';
         return;
     }
+    
+    // Start polling immediately on first attempt, then use interval
+    const delay = attempt === 0 ? 500 : POLL_INTERVAL;
     
     setTimeout(async () => {
         try {
@@ -125,7 +128,8 @@ function pollForHistory(attempt) {
             historyDisplay.textContent = `Error loading history: ${error.message}`;
             historyDisplay.className = 'history-display error';
         }
-    }, POLL_INTERVAL);
+    }, delay);
+
 }
 
 async function checkHistoryStatus() {
