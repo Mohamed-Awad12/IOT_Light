@@ -80,7 +80,8 @@ historyBtn.addEventListener('click', async () => {
         if (result.success) {
             // Wait for the webhook to send back the history to POST /api/history
             historyDisplay.textContent = 'Waiting for history data...';
-            setTimeout(checkHistoryStatus, 1500);
+            // Poll multiple times with increasing delays
+            pollForHistory(0);
         } else {
             historyDisplay.textContent = `Failed to load history: ${result.error}`;
             historyDisplay.className = 'history-display error';
@@ -90,6 +91,40 @@ historyBtn.addEventListener('click', async () => {
         historyDisplay.className = 'history-display error';
     }
 });
+
+let historyPollCount = 0;
+const MAX_HISTORY_POLLS = 10;
+
+function pollForHistory(attempt) {
+    if (attempt >= MAX_HISTORY_POLLS) {
+        historyDisplay.textContent = 'History data not received. Please try again.';
+        historyDisplay.className = 'history-display error';
+        return;
+    }
+    
+    setTimeout(async () => {
+        try {
+            const response = await fetch('/api/history');
+            const data = await response.json();
+            
+            if (data.history) {
+                // Display the history data
+                if (typeof data.history === 'object') {
+                    historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(data.history, null, 2) + '</pre>';
+                } else {
+                    historyDisplay.innerHTML = '<h3>History</h3><pre>' + data.history + '</pre>';
+                }
+            } else {
+                // Continue polling
+                historyDisplay.textContent = `Waiting for history data... (${attempt + 1}/${MAX_HISTORY_POLLS})`;
+                pollForHistory(attempt + 1);
+            }
+        } catch (error) {
+            historyDisplay.textContent = `Error loading history: ${error.message}`;
+            historyDisplay.className = 'history-display error';
+        }
+    }, 1000); // Poll every 1 second
+}
 
 async function checkHistoryStatus() {
     try {
