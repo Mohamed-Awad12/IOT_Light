@@ -13,6 +13,60 @@ let sessionToken = sessionStorage.getItem('historySessionToken');
 let lockoutTimer = null;
 let lockoutEndTime = null;
 
+// Client-side rate limiting (backup for serverless environments)
+const LOCKOUT_STORAGE_KEY = 'loginLockout';
+const MAX_CLIENT_ATTEMPTS = 5;
+const CLIENT_LOCKOUT_DURATION = 3 * 60 * 1000; // 3 minutes
+
+function getClientLockoutState() {
+    const stored = localStorage.getItem(LOCKOUT_STORAGE_KEY);
+    if (!stored) return { attempts: 0, lockoutUntil: 0 };
+    try {
+        return JSON.parse(stored);
+    } catch {
+        return { attempts: 0, lockoutUntil: 0 };
+    }
+}
+
+function setClientLockoutState(state) {
+    localStorage.setItem(LOCKOUT_STORAGE_KEY, JSON.stringify(state));
+}
+
+function clearClientLockoutState() {
+    localStorage.removeItem(LOCKOUT_STORAGE_KEY);
+}
+
+function checkClientLockout() {
+    const state = getClientLockoutState();
+    const now = Date.now();
+    
+    if (state.lockoutUntil && now < state.lockoutUntil) {
+        // Still locked out
+        const remaining = Math.ceil((state.lockoutUntil - now) / 1000);
+        return { lockedOut: true, retryAfter: remaining };
+    }
+    
+    // Lockout expired, reset if needed
+    if (state.lockoutUntil && now >= state.lockoutUntil) {
+        clearClientLockoutState();
+        return { lockedOut: false };
+    }
+    
+    return { lockedOut: false, attempts: state.attempts };
+}
+
+function recordFailedAttempt() {
+    const state = getClientLockoutState();
+    state.attempts = (state.attempts || 0) + 1;
+    
+    if (state.attempts >= MAX_CLIENT_ATTEMPTS) {
+        state.lockoutUntil = Date.now() + CLIENT_LOCKOUT_DURATION;
+    }
+    
+    setClientLockoutState(state);
+    return state;
+}
+
 // Check if authentication is required
 async function checkAuth() {
     try {
@@ -64,6 +118,12 @@ async function checkAuth() {
 function showLoginSection() {
     loginSection.classList.remove('hidden');
     historySection.classList.add('hidden');
+    
+    // Check if there's an existing client-side lockout
+    const clientLockout = checkClientLockout();
+    if (clientLockout.lockedOut) {
+        startLockoutCountdown(clientLockout.retryAfter);
+    }
 }
 
 function showHistorySection() {
@@ -74,7 +134,14 @@ function showHistorySection() {
 async function login() {
     const password = passwordInput.value;
     
-    // Check if currently locked out
+    // Check client-side lockout first
+    const clientLockout = checkClientLockout();
+    if (clientLockout.lockedOut) {
+        startLockoutCountdown(clientLockout.retryAfter);
+        return;
+    }
+    
+    // Check if currently locked out (from previous countdown)
     if (lockoutEndTime && Date.now() < lockoutEndTime) {
         return;
     }
@@ -101,6 +168,8 @@ async function login() {
         console.log('Login response:', result); // Debug log
         
         if (result.success) {
+            // Clear client-side lockout state on successful login
+            clearClientLockoutState();
             sessionToken = result.sessionToken;
             sessionStorage.setItem('historySessionToken', sessionToken);
             hideLoginError();
@@ -108,12 +177,24 @@ async function login() {
             showHistorySection();
             loadHistory();
         } else if (result.lockedOut && result.retryAfter) {
-            // Start lockout countdown
+            // Server says locked out - start countdown
+            recordFailedAttempt(); // Also record client-side
             startLockoutCountdown(result.retryAfter);
         } else {
-            showLoginError(result.error || 'Login failed');
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login';
+            // Wrong password - record attempt client-side
+            const state = recordFailedAttempt();
+            const attemptsRemaining = MAX_CLIENT_ATTEMPTS - state.attempts;
+            
+            if (state.lockoutUntil) {
+                // Just hit the limit - start lockout
+                const remaining = Math.ceil((state.lockoutUntil - Date.now()) / 1000);
+                startLockoutCountdown(remaining);
+            } else {
+                // Show error with attempts remaining
+                showLoginError(`Invalid password. ${attemptsRemaining} attempts remaining.`);
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
         }
     } catch (error) {
         showLoginError('Login failed: ' + error.message);
@@ -165,6 +246,8 @@ function clearLockoutTimer() {
         lockoutTimer = null;
     }
     lockoutEndTime = null;
+    // Also clear client-side lockout state when timer ends
+    clearClientLockoutState();
     loginBtn.disabled = false;
     loginBtn.textContent = 'Login';
     passwordInput.disabled = false;
