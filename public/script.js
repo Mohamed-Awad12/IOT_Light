@@ -1,6 +1,8 @@
 const turnOnBtn = document.getElementById('turnOnBtn');
 const turnOffBtn = document.getElementById('turnOffBtn');
+const historyBtn = document.getElementById('historyBtn');
 const statusDiv = document.getElementById('status');
+const historyDisplay = document.getElementById('historyDisplay');
 
 async function sendCommand(command) {
     try {
@@ -58,4 +60,36 @@ turnOnBtn.addEventListener('click', () => {
 
 turnOffBtn.addEventListener('click', () => {
     sendCommand('turn off the lights');
+});
+
+historyBtn.addEventListener('click', async () => {
+    try {
+        historyDisplay.textContent = 'Loading history...';
+        historyDisplay.style.display = 'block';
+        historyDisplay.className = 'history-display';
+
+        const response = await fetch('/api/history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Display the history data
+            if (typeof result.data === 'object') {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + JSON.stringify(result.data, null, 2) + '</pre>';
+            } else {
+                historyDisplay.innerHTML = '<h3>History</h3><pre>' + result.data + '</pre>';
+            }
+        } else {
+            historyDisplay.textContent = `Failed to load history: ${result.error}`;
+            historyDisplay.className = 'history-display error';
+        }
+    } catch (error) {
+        historyDisplay.textContent = `Error loading history: ${error.message}`;
+        historyDisplay.className = 'history-display error';
+    }
 });

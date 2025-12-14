@@ -87,6 +87,43 @@ app.get('/api/status', (req, res) => {
     res.json({ status });
 });
 
+// Endpoint to get history
+app.post('/api/history', async (req, res) => {
+    try {
+        const response = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command: 'history' })
+        });
+
+        if (response.ok) {
+            const contentType = response.headers.get('content-type');
+            let data;
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
+            
+            res.json({ success: true, data });
+        } else {
+            res.status(response.status).json({ 
+                success: false, 
+                error: `Webhook returned status ${response.status}` 
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching history:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
