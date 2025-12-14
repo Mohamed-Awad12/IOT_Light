@@ -3,7 +3,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook/google-assistant';
+const WEBHOOK_URL = 'https://awad123612.app.n8n.cloud/webhook-test/google-assistant';
 
 
 app.use(express.json());
