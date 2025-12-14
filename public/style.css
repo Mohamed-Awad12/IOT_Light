@@ -75,6 +75,9 @@ h1 {
 
 .btn-history {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn-history:hover {
