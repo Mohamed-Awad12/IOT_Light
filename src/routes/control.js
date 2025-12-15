@@ -5,13 +5,9 @@ const fetch = global.fetch || require('node-fetch');
 
 const router = express.Router();
 
-// Store for status (in production, use Redis)
 let lastStatus = null;
 
-/**
- * POST /api/control
- * Send control command to webhook
- */
+
 router.post('/', async (req, res) => {
     try {
         const { command } = req.body;
@@ -20,7 +16,6 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Command is required' });
         }
 
-        // Clear old status before sending new command
         lastStatus = null;
 
         const response = await fetch(config.WEBHOOK_URL, {

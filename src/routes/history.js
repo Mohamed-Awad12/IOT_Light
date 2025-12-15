@@ -6,10 +6,7 @@ const fetch = global.fetch || require('node-fetch');
 
 const router = express.Router();
 
-/**
- * POST /api/history/request
- * Fetch history from Adafruit IO (protected)
- */
+
 router.post('/request', verifySession, async (req, res) => {
     try {
         const response = await fetch(

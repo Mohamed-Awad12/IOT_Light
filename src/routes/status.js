@@ -2,13 +2,9 @@ const express = require('express');
 
 const router = express.Router();
 
-// Store for status (in production, use Redis)
 let lastStatus = null;
 
-/**
- * POST /api/status
- * Receive status updates from webhook
- */
+
 router.post('/', (req, res) => {
     try {
         const { response: statusMessage } = req.body;
@@ -26,13 +22,9 @@ router.post('/', (req, res) => {
     }
 });
 
-/**
- * GET /api/status
- * Get the latest status (one-shot)
- */
+
 router.get('/', (req, res) => {
     const status = lastStatus;
-    // Clear the status after reading it
     lastStatus = null;
     res.json({ status });
 });

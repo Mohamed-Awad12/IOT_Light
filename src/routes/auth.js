@@ -5,10 +5,10 @@ const { session, rateLimit } = require('../models');
 
 const router = express.Router();
 
-// Verify reCAPTCHA v2 token
+
 async function verifyRecaptcha(token) {
     if (!token) {
-        console.log('reCAPTCHA: No token provided');
+        console.error('reCAPTCHA: No token provided');
         return false;
     }
     
@@ -20,7 +20,6 @@ async function verifyRecaptcha(token) {
             body: `secret=${config.RECAPTCHA_SECRET_KEY}&response=${token}`
         });
         const data = await response.json();
-        console.log('reCAPTCHA response:', JSON.stringify(data));
         return data.success === true;
     } catch (error) {
         console.error('reCAPTCHA verification error:', error);
@@ -41,7 +40,6 @@ router.post('/login', async (req, res) => {
     const { password, recaptchaToken } = req.body;
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     
-    // Verify reCAPTCHA first
     const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
     if (!isRecaptchaValid) {
         return res.status(400).json({ 
@@ -71,12 +69,10 @@ router.post('/login', async (req, res) => {
                     retryAfter: remainingTime
                 });
             } else {
-                // Lockout expired, clear it
                 await rateLimit.clearLoginAttempts(clientIp);
             }
         }
         
-        // Wrong password
         if (password !== config.HISTORY_PASSWORD) {
             const currentAttempts = await rateLimit.getLoginAttempts(clientIp);
             currentAttempts.count = (currentAttempts.count || 0) + 1;
@@ -89,7 +85,6 @@ router.post('/login', async (req, res) => {
             
             const attemptsRemaining = config.MAX_LOGIN_ATTEMPTS - currentAttempts.count;
             
-            // Add delay to slow down attacks
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             if (currentAttempts.count >= config.MAX_LOGIN_ATTEMPTS) {
@@ -107,13 +102,10 @@ router.post('/login', async (req, res) => {
             }
         }
         
-        // Successful login - clear any failed attempts
         await rateLimit.clearLoginAttempts(clientIp);
         
-        // Generate secure session token
         const sessionToken = crypto.randomBytes(32).toString('hex');
         
-        // Store session
         session.createSession(sessionToken);
         
         return res.json({ 
@@ -130,10 +122,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/logout
- * Logout and invalidate session
- */
+
 router.post('/logout', (req, res) => {
     const sessionToken = req.headers['x-session-token'];
     if (sessionToken) {

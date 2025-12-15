@@ -1,17 +1,16 @@
 const config = require('../config');
 
-// Initialize Redis client - lazy loading for serverless
 let redisClient = null;
 let redisConnected = false;
 let redisInitializing = false;
 
 async function getRedisClient() {
-    // Already connected
+   
     if (redisClient && redisConnected) {
         return redisClient;
     }
     
-    // Already initializing, wait
+ 
     if (redisInitializing) {
         await new Promise(resolve => setTimeout(resolve, 100));
         return redisClient;
@@ -20,7 +19,7 @@ async function getRedisClient() {
     redisInitializing = true;
     
     try {
-        // Option 1: Upstash Redis (REST API) - Best for serverless!
+       
         if (config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN) {
             const { Redis } = require('@upstash/redis');
             redisClient = new Redis({
@@ -29,16 +28,11 @@ async function getRedisClient() {
             });
             redisClient.type = 'upstash';
             redisConnected = true;
-            console.log('Rate Limiter: Using Upstash Redis');
             return redisClient;
         }
         
-        // Option 2: Redis Cloud - use HTTP wrapper for serverless compatibility
+       
         if (process.env.REDIS_URL) {
-            // For serverless, we'll use in-memory fallback with Redis Cloud
-            // because TCP connections don't persist between invocations
-            console.log('Rate Limiter: Redis URL found, but using in-memory for serverless compatibility');
-            console.log('Tip: Use Upstash Redis for better serverless support');
             redisConnected = false;
             return null;
         }
@@ -52,12 +46,10 @@ async function getRedisClient() {
     return null;
 }
 
-// Fallback in-memory store
+
 const failedLoginAttempts = new Map();
 
-/**
- * Get login attempts for an IP address
- */
+
 async function getLoginAttempts(ip) {
     const client = await getRedisClient();
     
@@ -77,27 +69,21 @@ async function getLoginAttempts(ip) {
     }
 }
 
-/**
- * Set login attempts for an IP address
- */
+
 async function setLoginAttempts(ip, data) {
-    // Always set in memory as fallback
     failedLoginAttempts.set(ip, data);
     
     const client = await getRedisClient();
     if (!client) return;
     
     try {
-        // Upstash Redis uses .set() with options
         await client.set(`login_attempts:${ip}`, JSON.stringify(data), { ex: 300 });
     } catch (error) {
         console.error('Redis set error:', error);
     }
 }
 
-/**
- * Clear login attempts for an IP address
- */
+
 async function clearLoginAttempts(ip) {
     failedLoginAttempts.delete(ip);
     
@@ -111,9 +97,7 @@ async function clearLoginAttempts(ip) {
     }
 }
 
-/**
- * Cleanup expired entries (for in-memory fallback)
- */
+
 function cleanupExpiredAttempts() {
     const now = Date.now();
     for (const [ip, data] of failedLoginAttempts) {

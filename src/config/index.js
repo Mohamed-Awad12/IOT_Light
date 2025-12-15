@@ -1,4 +1,4 @@
-// Configuration constants
+
 module.exports = {
     PORT: process.env.PORT || 3000,
     WEBHOOK_URL: 'https://awad123612.app.n8n.cloud/webhook/google-assistant',
@@ -8,10 +8,10 @@ module.exports = {
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     
-    // reCAPTCHA
-    RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY || '6LfsOCwsAAAAAGqYTlge87zvKqoYx8AvHaBHvCtc',
+   
+    RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     
-    // Rate limiting
+ 
     MAX_LOGIN_ATTEMPTS: 5,
     LOCKOUT_DURATION: 3 * 60 * 1000, // 3 minutes in ms
     LOCKOUT_DURATION_SECONDS: 180,   // 3 minutes in seconds

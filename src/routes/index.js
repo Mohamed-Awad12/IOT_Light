@@ -1,4 +1,3 @@
-// Routes index - export all routes
 const authRoutes = require('./auth');
 const controlRoutes = require('./control');
 const statusRoutes = require('./status');
