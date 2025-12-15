@@ -18,10 +18,7 @@
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .g-recaptcha{
-            display: flex;
-            justify-content: center;
-        }
+        
         
         .history-container h1 {
             font-size: 2.2em;
@@ -305,7 +302,7 @@
                 <h2>Authentication Required</h2>
                 <p style="color: #666; margin-bottom: 15px;">Enter password to view history</p>
                 <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password">
-                <div class="g-recaptcha" data-sitekey="6LfsOCwsAAAAAEvHp-vj4lj9iRvYECxpr2YzQA1a" style="margin: 15px 0;" data-theme="dark" data-callback="onSubmit"></div></div>
+                <div class="g-recaptcha" data-sitekey="6LfsOCwsAAAAAEvHp-vj4lj9iRvYECxpr2YzQA1a" style="margin: 15px 0;"></div>
                 <button id="loginBtn" class="btn login-btn">Login</button>
                 <div id="loginError" class="login-error hidden"></div>
             </div>
