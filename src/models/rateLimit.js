@@ -67,11 +67,10 @@ async function getLoginAttempts(ip) {
     
     try {
         const data = await client.get(`login_attempts:${ip}`);
-        if (client.type === 'upstash') {
-            return data || { count: 0, lockoutUntil: 0 };
-        } else {
-            return data ? JSON.parse(data) : { count: 0, lockoutUntil: 0 };
+        if (data) {
+            return typeof data === 'string' ? JSON.parse(data) : data;
         }
+        return { count: 0, lockoutUntil: 0 };
     } catch (error) {
         console.error('Redis get error:', error);
         return failedLoginAttempts.get(ip) || { count: 0, lockoutUntil: 0 };
@@ -89,11 +88,8 @@ async function setLoginAttempts(ip, data) {
     if (!client) return;
     
     try {
-        if (client.type === 'upstash') {
-            await client.set(`login_attempts:${ip}`, data, { ex: 300 });
-        } else {
-            await client.setEx(`login_attempts:${ip}`, 300, JSON.stringify(data));
-        }
+        // Upstash Redis uses .set() with options
+        await client.set(`login_attempts:${ip}`, JSON.stringify(data), { ex: 300 });
     } catch (error) {
         console.error('Redis set error:', error);
     }
