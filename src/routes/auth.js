@@ -7,7 +7,10 @@ const router = express.Router();
 
 // Verify reCAPTCHA v2 token
 async function verifyRecaptcha(token) {
-    if (!token) return false;
+    if (!token) {
+        console.log('reCAPTCHA: No token provided');
+        return false;
+    }
     
     try {
         const fetch = (await import('node-fetch')).default;
@@ -17,6 +20,7 @@ async function verifyRecaptcha(token) {
             body: `secret=${config.RECAPTCHA_SECRET_KEY}&response=${token}`
         });
         const data = await response.json();
+        console.log('reCAPTCHA response:', JSON.stringify(data));
         return data.success === true;
     } catch (error) {
         console.error('reCAPTCHA verification error:', error);
