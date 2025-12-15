@@ -1,73 +1,77 @@
 const config = require('../config');
 
-// Initialize Redis client
+// Initialize Redis client - lazy loading for serverless
 let redisClient = null;
 let redisConnected = false;
+let redisInitializing = false;
 
-async function initRedis() {
-    // Option 1: Upstash Redis (REST API)
-    if (config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN) {
-        const { Redis } = require('@upstash/redis');
-        redisClient = new Redis({
-            url: config.UPSTASH_REDIS_REST_URL,
-            token: config.UPSTASH_REDIS_REST_TOKEN,
-        });
-        redisClient.type = 'upstash';
-        redisConnected = true;
-        console.log('Rate Limiter: Connected to Upstash Redis');
-        return;
+async function getRedisClient() {
+    // Already connected
+    if (redisClient && redisConnected) {
+        return redisClient;
     }
     
-    // Option 2: Redis Cloud or standard Redis (connection string)
-    if (process.env.REDIS_URL) {
-        const { createClient } = require('redis');
-        redisClient = createClient({
-            url: process.env.REDIS_URL
-        });
-        
-        redisClient.on('error', (err) => {
-            console.error('Redis Client Error:', err);
-            redisConnected = false;
-        });
-        
-        redisClient.on('connect', () => {
-            console.log('Rate Limiter: Connected to Redis Cloud');
-            redisConnected = true;
-        });
-        
-        try {
-            await redisClient.connect();
-            redisClient.type = 'standard';
-        } catch (error) {
-            console.error('Failed to connect to Redis:', error);
-            redisConnected = false;
-        }
+    // Already initializing, wait
+    if (redisInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return redisClient;
     }
+    
+    redisInitializing = true;
+    
+    try {
+        // Option 1: Upstash Redis (REST API) - Best for serverless!
+        if (config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN) {
+            const { Redis } = require('@upstash/redis');
+            redisClient = new Redis({
+                url: config.UPSTASH_REDIS_REST_URL,
+                token: config.UPSTASH_REDIS_REST_TOKEN,
+            });
+            redisClient.type = 'upstash';
+            redisConnected = true;
+            console.log('Rate Limiter: Using Upstash Redis');
+            return redisClient;
+        }
+        
+        // Option 2: Redis Cloud - use HTTP wrapper for serverless compatibility
+        if (process.env.REDIS_URL) {
+            // For serverless, we'll use in-memory fallback with Redis Cloud
+            // because TCP connections don't persist between invocations
+            console.log('Rate Limiter: Redis URL found, but using in-memory for serverless compatibility');
+            console.log('Tip: Use Upstash Redis for better serverless support');
+            redisConnected = false;
+            return null;
+        }
+    } catch (error) {
+        console.error('Redis init error:', error);
+        redisConnected = false;
+    } finally {
+        redisInitializing = false;
+    }
+    
+    return null;
 }
 
-// Initialize Redis on module load
-initRedis();
-
-// Fallback in-memory store (for local development)
+// Fallback in-memory store
 const failedLoginAttempts = new Map();
 
 /**
  * Get login attempts for an IP address
  */
 async function getLoginAttempts(ip) {
-    if (!redisClient || !redisConnected) {
+    const client = await getRedisClient();
+    
+    if (!client) {
         return failedLoginAttempts.get(ip) || { count: 0, lockoutUntil: 0 };
     }
     
     try {
-        let data;
-        if (redisClient.type === 'upstash') {
-            data = await redisClient.get(`login_attempts:${ip}`);
+        const data = await client.get(`login_attempts:${ip}`);
+        if (client.type === 'upstash') {
+            return data || { count: 0, lockoutUntil: 0 };
         } else {
-            const result = await redisClient.get(`login_attempts:${ip}`);
-            data = result ? JSON.parse(result) : null;
+            return data ? JSON.parse(data) : { count: 0, lockoutUntil: 0 };
         }
-        return data || { count: 0, lockoutUntil: 0 };
     } catch (error) {
         console.error('Redis get error:', error);
         return failedLoginAttempts.get(ip) || { count: 0, lockoutUntil: 0 };
@@ -81,15 +85,14 @@ async function setLoginAttempts(ip, data) {
     // Always set in memory as fallback
     failedLoginAttempts.set(ip, data);
     
-    if (!redisClient || !redisConnected) {
-        return;
-    }
+    const client = await getRedisClient();
+    if (!client) return;
     
     try {
-        if (redisClient.type === 'upstash') {
-            await redisClient.set(`login_attempts:${ip}`, data, { ex: 300 });
+        if (client.type === 'upstash') {
+            await client.set(`login_attempts:${ip}`, data, { ex: 300 });
         } else {
-            await redisClient.setEx(`login_attempts:${ip}`, 300, JSON.stringify(data));
+            await client.setEx(`login_attempts:${ip}`, 300, JSON.stringify(data));
         }
     } catch (error) {
         console.error('Redis set error:', error);
@@ -102,12 +105,11 @@ async function setLoginAttempts(ip, data) {
 async function clearLoginAttempts(ip) {
     failedLoginAttempts.delete(ip);
     
-    if (!redisClient || !redisConnected) {
-        return;
-    }
+    const client = await getRedisClient();
+    if (!client) return;
     
     try {
-        await redisClient.del(`login_attempts:${ip}`);
+        await client.del(`login_attempts:${ip}`);
     } catch (error) {
         console.error('Redis del error:', error);
     }

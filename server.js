@@ -27,15 +27,20 @@ app.use('/api/control', controlRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/history', historyRoutes);
 
-// Cleanup expired sessions and rate limit entries every 10 minutes
-setInterval(() => {
-    session.cleanupExpiredSessions();
-    rateLimit.cleanupExpiredAttempts();
-}, 10 * 60 * 1000);
+// Cleanup tasks - only run in non-serverless environment
+// (Vercel serverless doesn't persist between invocations)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    setInterval(() => {
+        session.cleanupExpiredSessions();
+        rateLimit.cleanupExpiredAttempts();
+    }, 10 * 60 * 1000);
+}
 
-// Start server
-app.listen(config.PORT, () => {
-    console.log(`Server is running on http://localhost:${config.PORT}`);
-});
+// Start server (only in non-serverless environment)
+if (!process.env.VERCEL) {
+    app.listen(config.PORT, () => {
+        console.log(`Server is running on http://localhost:${config.PORT}`);
+    });
+}
 
 module.exports = app;
