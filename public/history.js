@@ -1,4 +1,3 @@
-// DOM Elements
 const historyContent = document.getElementById('historyContent');
 const refreshBtn = document.getElementById('refreshBtn');
 const loginSection = document.getElementById('loginSection');
@@ -8,12 +7,10 @@ const logoutBtn = document.getElementById('logoutBtn');
 const passwordInput = document.getElementById('passwordInput');
 const loginError = document.getElementById('loginError');
 
-// Session token stored in sessionStorage (cleared when browser closes)
 let sessionToken = sessionStorage.getItem('historySessionToken');
 let lockoutTimer = null;
 let lockoutEndTime = null;
 
-// Client-side rate limiting (backup for serverless environments)
 const LOCKOUT_STORAGE_KEY = 'loginLockout';
 const MAX_CLIENT_ATTEMPTS = 5;
 const CLIENT_LOCKOUT_DURATION = 3 * 60 * 1000; // 3 minutes
@@ -41,12 +38,10 @@ function checkClientLockout() {
     const now = Date.now();
     
     if (state.lockoutUntil && now < state.lockoutUntil) {
-        // Still locked out
         const remaining = Math.ceil((state.lockoutUntil - now) / 1000);
         return { lockedOut: true, retryAfter: remaining };
     }
     
-    // Lockout expired, reset if needed
     if (state.lockoutUntil && now >= state.lockoutUntil) {
         clearClientLockoutState();
         return { lockedOut: false };
@@ -67,22 +62,18 @@ function recordFailedAttempt() {
     return state;
 }
 
-// Check if authentication is required
 async function checkAuth() {
     try {
         const response = await fetch('/api/auth/status');
         const data = await response.json();
         
         if (!data.requiresAuth) {
-            // No auth required, show history directly
             showHistorySection();
             loadHistory();
             return;
         }
         
-        // Auth required, check if we have a valid session
         if (sessionToken) {
-            // Try to load history with existing token
             const testResponse = await fetch('/api/history/request', {
                 method: 'POST',
                 headers: {
@@ -101,13 +92,11 @@ async function checkAuth() {
                 }
                 return;
             } else {
-                // Session expired, clear it
                 sessionStorage.removeItem('historySessionToken');
                 sessionToken = null;
             }
         }
         
-        // Show login form
         showLoginSection();
     } catch (error) {
         console.error('Auth check failed:', error);
@@ -119,7 +108,6 @@ function showLoginSection() {
     loginSection.classList.remove('hidden');
     historySection.classList.add('hidden');
     
-    // Check if there's an existing client-side lockout
     const clientLockout = checkClientLockout();
     if (clientLockout.lockedOut) {
         startLockoutCountdown(clientLockout.retryAfter);
@@ -134,14 +122,12 @@ function showHistorySection() {
 async function login() {
     const password = passwordInput.value;
     
-    // Check client-side lockout first
     const clientLockout = checkClientLockout();
     if (clientLockout.lockedOut) {
         startLockoutCountdown(clientLockout.retryAfter);
         return;
     }
     
-    // Check if currently locked out (from previous countdown)
     if (lockoutEndTime && Date.now() < lockoutEndTime) {
         return;
     }
@@ -154,7 +140,6 @@ async function login() {
     loginBtn.disabled = true;
     loginBtn.textContent = 'Logging in...';
     
-    // Get reCAPTCHA v2 token
     const recaptchaToken = grecaptcha.getResponse();
     if (!recaptchaToken) {
         showLoginError('Please complete the reCAPTCHA checkbox');
@@ -174,10 +159,8 @@ async function login() {
         
         const result = await response.json();
         
-        console.log('Login response:', result); // Debug log
         
         if (result.success) {
-            // Clear client-side lockout state on successful login
             clearClientLockoutState();
             sessionToken = result.sessionToken;
             sessionStorage.setItem('historySessionToken', sessionToken);
@@ -186,22 +169,21 @@ async function login() {
             showHistorySection();
             loadHistory();
         } else if (result.lockedOut && result.retryAfter) {
-            // Server says locked out - start countdown
-            recordFailedAttempt(); // Also record client-side
-            grecaptcha.reset(); // Reset reCAPTCHA
+            recordFailedAttempt(); 
+            grecaptcha.reset(); 
             startLockoutCountdown(result.retryAfter);
         } else {
-            // Wrong password - record attempt client-side
+
             const state = recordFailedAttempt();
             const attemptsRemaining = MAX_CLIENT_ATTEMPTS - state.attempts;
-            grecaptcha.reset(); // Reset reCAPTCHA
+            grecaptcha.reset(); 
             
             if (state.lockoutUntil) {
-                // Just hit the limit - start lockout
+                
                 const remaining = Math.ceil((state.lockoutUntil - Date.now()) / 1000);
                 startLockoutCountdown(remaining);
             } else {
-                // Show error with attempts remaining
+                
                 showLoginError(`Invalid password. ${attemptsRemaining} attempts remaining.`);
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
@@ -209,7 +191,7 @@ async function login() {
         }
     } catch (error) {
         showLoginError('Login failed: ' + error.message);
-        grecaptcha.reset(); // Reset reCAPTCHA
+        grecaptcha.reset(); 
         loginBtn.disabled = false;
         loginBtn.textContent = 'Login';
     }
@@ -220,15 +202,14 @@ function startLockoutCountdown(seconds) {
     loginBtn.disabled = true;
     passwordInput.disabled = true;
     
-    // Clear any existing timer
+   
     if (lockoutTimer) {
         clearInterval(lockoutTimer);
     }
     
-    // Update immediately
+   
     updateLockoutDisplay();
-    
-    // Start countdown timer
+  
     lockoutTimer = setInterval(() => {
         updateLockoutDisplay();
     }, 1000);
@@ -258,7 +239,6 @@ function clearLockoutTimer() {
         lockoutTimer = null;
     }
     lockoutEndTime = null;
-    // Also clear client-side lockout state when timer ends
     clearClientLockoutState();
     loginBtn.disabled = false;
     loginBtn.textContent = 'Login';
@@ -313,7 +293,7 @@ async function loadHistory() {
         const result = await response.json();
 
         if (response.status === 401) {
-            // Session expired
+            
             sessionStorage.removeItem('historySessionToken');
             sessionToken = null;
             showLoginSection();
@@ -387,7 +367,7 @@ function displayHistoryTable(data) {
     historyContent.innerHTML = tableHTML;
 }
 
-// Event listeners
+
 loginBtn.addEventListener('click', login);
 passwordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') login();
@@ -395,5 +375,5 @@ passwordInput.addEventListener('keypress', (e) => {
 logoutBtn.addEventListener('click', logout);
 refreshBtn.addEventListener('click', loadHistory);
 
-// Initialize on page load
+
 checkAuth();

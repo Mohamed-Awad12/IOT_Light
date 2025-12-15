@@ -5,12 +5,11 @@ const { verifySession } = require('../middlewares');
 const fetch = global.fetch || require('node-fetch');
 
 const router = express.Router();
-
-
+const LIMIT = 40
 router.post('/request', verifySession, async (req, res) => {
     try {
         const response = await fetch(
-            `https://io.adafruit.com/api/v2/${config.AIO_USERNAME}/feeds/light/data?limit=30`,
+            `https://io.adafruit.com/api/v2/${config.AIO_USERNAME}/feeds/light/data?limit=${LIMIT}`,
             {
                 method: 'GET',
                 headers: {
