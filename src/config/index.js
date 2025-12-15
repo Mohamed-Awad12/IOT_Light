@@ -8,6 +8,9 @@ module.exports = {
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     
+    // reCAPTCHA
+    RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY || '6LdpMSwsAAAAAII5-zwvmV8l_x3m4Ec5b8eWZ702',
+    
     // Rate limiting
     MAX_LOGIN_ATTEMPTS: 5,
     LOCKOUT_DURATION: 3 * 60 * 1000, // 3 minutes in ms

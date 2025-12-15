@@ -5,10 +5,26 @@ const { session, rateLimit } = require('../models');
 
 const router = express.Router();
 
-/**
- * GET /api/auth/status
- * Check if authentication is required
- */
+// Verify reCAPTCHA token
+async function verifyRecaptcha(token) {
+    if (!token) return false;
+    
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `secret=${config.RECAPTCHA_SECRET_KEY}&response=${token}`
+        });
+        const data = await response.json();
+        return data.success === true;
+    } catch (error) {
+        console.error('reCAPTCHA verification error:', error);
+        return false;
+    }
+}
+
+
 router.get('/status', (req, res) => {
     res.json({ 
         requiresAuth: !!config.HISTORY_PASSWORD,
@@ -16,21 +32,26 @@ router.get('/status', (req, res) => {
     });
 });
 
-/**
- * POST /api/auth/login
- * Login with password
- */
+
 router.post('/login', async (req, res) => {
-    const { password } = req.body;
+    const { password, recaptchaToken } = req.body;
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     
-    // Dev mode - no password required
+    // Verify reCAPTCHA first
+    const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+    if (!isRecaptchaValid) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'reCAPTCHA verification failed. Please try again.'
+        });
+    }
+   
     if (!config.HISTORY_PASSWORD) {
         return res.json({ success: true, sessionToken: 'dev-mode' });
     }
     
     try {
-        // Check if IP is currently locked out
+        
         const attemptData = await rateLimit.getLoginAttempts(clientIp);
         
         if (attemptData && attemptData.count >= config.MAX_LOGIN_ATTEMPTS) {
