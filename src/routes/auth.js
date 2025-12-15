@@ -5,7 +5,7 @@ const { session, rateLimit } = require('../models');
 
 const router = express.Router();
 
-// Verify reCAPTCHA v3 token
+// Verify reCAPTCHA v2 token
 async function verifyRecaptcha(token) {
     if (!token) return false;
     
@@ -17,8 +17,7 @@ async function verifyRecaptcha(token) {
             body: `secret=${config.RECAPTCHA_SECRET_KEY}&response=${token}`
         });
         const data = await response.json();
-        // v3 returns success and score (0.0 - 1.0), we require score >= 0.5
-        return data.success === true && data.score >= 0.5;
+        return data.success === true;
     } catch (error) {
         console.error('reCAPTCHA verification error:', error);
         return false;

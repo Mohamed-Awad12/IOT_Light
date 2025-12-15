@@ -154,10 +154,16 @@ async function login() {
     loginBtn.disabled = true;
     loginBtn.textContent = 'Logging in...';
     
+    // Get reCAPTCHA v2 token
+    const recaptchaToken = grecaptcha.getResponse();
+    if (!recaptchaToken) {
+        showLoginError('Please complete the reCAPTCHA checkbox');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+        return;
+    }
+    
     try {
-        // Get reCAPTCHA v3 token
-        const recaptchaToken = await grecaptcha.execute('6LdpMSwsAAAAAGL0EVX1s95v9LU34pt-yiweZ8JT', { action: 'login' });
-        
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
@@ -182,11 +188,13 @@ async function login() {
         } else if (result.lockedOut && result.retryAfter) {
             // Server says locked out - start countdown
             recordFailedAttempt(); // Also record client-side
+            grecaptcha.reset(); // Reset reCAPTCHA
             startLockoutCountdown(result.retryAfter);
         } else {
             // Wrong password - record attempt client-side
             const state = recordFailedAttempt();
             const attemptsRemaining = MAX_CLIENT_ATTEMPTS - state.attempts;
+            grecaptcha.reset(); // Reset reCAPTCHA
             
             if (state.lockoutUntil) {
                 // Just hit the limit - start lockout
@@ -201,6 +209,7 @@ async function login() {
         }
     } catch (error) {
         showLoginError('Login failed: ' + error.message);
+        grecaptcha.reset(); // Reset reCAPTCHA
         loginBtn.disabled = false;
         loginBtn.textContent = 'Login';
     }
