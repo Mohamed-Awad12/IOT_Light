@@ -4,6 +4,16 @@ const crypto = require('crypto');
 
 const fetch = global.fetch || require('node-fetch');
 
+// Upstash Redis for serverless rate limiting
+let redis = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const { Redis } = require('@upstash/redis');
+    redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -12,9 +22,55 @@ const HISTORY_PASSWORD = process.env.HISTORY_PASSWORD;
 
 const validSessions = new Map();
 
+// Fallback in-memory store (for local development)
 const failedLoginAttempts = new Map();
 const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 3 * 60 * 1000;
+const LOCKOUT_DURATION = 3 * 60 * 1000; // 3 minutes
+const LOCKOUT_DURATION_SECONDS = 180; // 3 minutes in seconds
+
+// Redis-based rate limiting functions
+async function getLoginAttempts(ip) {
+    if (!redis) {
+        // Fallback to in-memory (local dev)
+        return failedLoginAttempts.get(ip) || { count: 0, lockoutUntil: 0 };
+    }
+    
+    try {
+        const data = await redis.get(`login_attempts:${ip}`);
+        return data || { count: 0, lockoutUntil: 0 };
+    } catch (error) {
+        console.error('Redis get error:', error);
+        return { count: 0, lockoutUntil: 0 };
+    }
+}
+
+async function setLoginAttempts(ip, data) {
+    if (!redis) {
+        // Fallback to in-memory (local dev)
+        failedLoginAttempts.set(ip, data);
+        return;
+    }
+    
+    try {
+        // Set with expiry of 5 minutes (auto-cleanup)
+        await redis.set(`login_attempts:${ip}`, data, { ex: 300 });
+    } catch (error) {
+        console.error('Redis set error:', error);
+    }
+}
+
+async function clearLoginAttempts(ip) {
+    if (!redis) {
+        failedLoginAttempts.delete(ip);
+        return;
+    }
+    
+    try {
+        await redis.del(`login_attempts:${ip}`);
+    } catch (error) {
+        console.error('Redis del error:', error);
+    }
+}
 
 
 setInterval(() => {
@@ -77,85 +133,91 @@ app.get('/api/auth/status', (req, res) => {
     });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { password } = req.body;
-    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     
     if (!HISTORY_PASSWORD) {
         return res.json({ success: true, sessionToken: 'dev-mode' });
     }
     
-    const attemptData = failedLoginAttempts.get(clientIp);
-    console.log(failedLoginAttempts);
-    if (attemptData) {
-        const now = Date.now();
-        if (attemptData.count >= MAX_LOGIN_ATTEMPTS && now < attemptData.lockoutUntil) {
-            const remainingTime = Math.ceil((attemptData.lockoutUntil - now) / 1000);
-            const minutes = Math.floor(remainingTime / 60);
-            const seconds = remainingTime % 60;
-            return res.status(429).json({ 
-                success: false, 
-                error: `Too many failed attempts. Try again in ${minutes}m ${seconds}s`,
-                lockedOut: true,
-                retryAfter: remainingTime
-            });
-        }
-
-        if (now >= attemptData.lockoutUntil) {
-            failedLoginAttempts.delete(clientIp);
-        }
-    }
-    
-    if (password !== HISTORY_PASSWORD) {
-       
-        const currentAttempts = failedLoginAttempts.get(clientIp) || { count: 0, lockoutUntil: 0 };
-        currentAttempts.count += 1;
+    try {
+        // Check if IP is currently locked out
+        const attemptData = await getLoginAttempts(clientIp);
         
-        if (currentAttempts.count >= MAX_LOGIN_ATTEMPTS) {
-            currentAttempts.lockoutUntil = Date.now() + LOCKOUT_DURATION;
+        if (attemptData && attemptData.count >= MAX_LOGIN_ATTEMPTS) {
+            const now = Date.now();
+            if (now < attemptData.lockoutUntil) {
+                const remainingTime = Math.ceil((attemptData.lockoutUntil - now) / 1000);
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                return res.status(429).json({ 
+                    success: false, 
+                    error: `Too many failed attempts. Try again in ${minutes}m ${seconds}s`,
+                    lockedOut: true,
+                    retryAfter: remainingTime
+                });
+            } else {
+                // Lockout expired, clear it
+                await clearLoginAttempts(clientIp);
+            }
         }
         
-        failedLoginAttempts.set(clientIp, currentAttempts);
-        
-        const attemptsRemaining = MAX_LOGIN_ATTEMPTS - currentAttempts.count;
-        
-
-        return setTimeout(() => {
+        if (password !== HISTORY_PASSWORD) {
+            // Wrong password - record attempt
+            const currentAttempts = await getLoginAttempts(clientIp);
+            currentAttempts.count = (currentAttempts.count || 0) + 1;
+            
             if (currentAttempts.count >= MAX_LOGIN_ATTEMPTS) {
-                res.status(429).json({ 
+                currentAttempts.lockoutUntil = Date.now() + LOCKOUT_DURATION;
+            }
+            
+            await setLoginAttempts(clientIp, currentAttempts);
+            
+            const attemptsRemaining = MAX_LOGIN_ATTEMPTS - currentAttempts.count;
+            
+            // Add delay to slow down attacks
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (currentAttempts.count >= MAX_LOGIN_ATTEMPTS) {
+                return res.status(429).json({ 
                     success: false, 
                     error: 'Too many failed attempts. Locked out for 3 minutes.',
                     lockedOut: true,
-                    retryAfter: LOCKOUT_DURATION / 1000
+                    retryAfter: LOCKOUT_DURATION_SECONDS
                 });
             } else {
-                
-                
-                res.status(401).json({ 
+                return res.status(401).json({ 
                     success: false, 
                     error: `Invalid password. ${attemptsRemaining} attempts remaining.`
                 });
             }
-        }, 1000);
+        }
+        
+        // Successful login - clear any failed attempts
+        await clearLoginAttempts(clientIp);
+        
+        // Generate secure session token
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        
+        // Store session with 1 hour expiry
+        validSessions.set(sessionToken, {
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour
+        });
+        
+        return res.json({ 
+            success: true, 
+            sessionToken,
+            expiresIn: 3600 // seconds
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Server error during authentication'
+        });
     }
-    
-    // Successful login - clear any failed attempts
-    failedLoginAttempts.delete(clientIp);
-    
-    // Generate secure session token
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    
-    // Store session with 1 hour expiry
-    validSessions.set(sessionToken, {
-        createdAt: Date.now(),
-        expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour
-    });
-    
-    res.json({ 
-        success: true, 
-        sessionToken,
-        expiresIn: 3600 // seconds
-    });
 });
 
 // Logout endpoint
