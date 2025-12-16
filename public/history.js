@@ -4,6 +4,7 @@ const loginSection = document.getElementById('loginSection');
 const historySection = document.getElementById('historySection');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const usernameInput = document.getElementById('usernameInput');
 const passwordInput = document.getElementById('passwordInput');
 const loginError = document.getElementById('loginError');
 
@@ -120,6 +121,7 @@ function showHistorySection() {
 }
 
 async function login() {
+    const username = usernameInput.value;
     const password = passwordInput.value;
     
     const clientLockout = checkClientLockout();
@@ -132,8 +134,8 @@ async function login() {
         return;
     }
     
-    if (!password) {
-        showLoginError('Please enter a password');
+    if (!username || !password) {
+        showLoginError('Please enter username and password');
         return;
     }
     
@@ -154,7 +156,7 @@ async function login() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ password, recaptchaToken })
+            body: JSON.stringify({ username, password, recaptchaToken })
         });
         
         const result = await response.json();

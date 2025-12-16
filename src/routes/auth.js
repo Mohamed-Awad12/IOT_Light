@@ -37,7 +37,7 @@ router.get('/status', (req, res) => {
 
 
 router.post('/login', async (req, res) => {
-    const { password, recaptchaToken } = req.body;
+    const { username, password, recaptchaToken } = req.body;
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     
     const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
             }
         }
         
-        if (password !== config.HISTORY_PASSWORD) {
+        if (username !== config.HISTORY_USERNAME || password !== config.HISTORY_PASSWORD) {
             const currentAttempts = await rateLimit.getLoginAttempts(clientIp);
             currentAttempts.count = (currentAttempts.count || 0) + 1;
             
