@@ -39,7 +39,7 @@ router.get('/status', (req, res) => {
 router.post('/login', async (req, res) => {
     const { username, password, recaptchaToken } = req.body;
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-    
+    console.log(`Login attempt from IP: ${clientIp}`);
     const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
     if (!isRecaptchaValid) {
         return res.status(400).json({ 
