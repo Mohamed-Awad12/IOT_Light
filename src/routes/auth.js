@@ -107,7 +107,7 @@ router.post('/login', async (req, res) => {
         const sessionToken = crypto.randomBytes(32).toString('hex');
         
         session.createSession(sessionToken);
-        
+        await rateLimit.clearLoginAttempts(clientIp);
         return res.json({ 
             success: true, 
             sessionToken,
