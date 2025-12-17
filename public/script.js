@@ -120,6 +120,9 @@ function updateLampState(isOn) {
         lampStatus.textContent = '💡 Light is ON';
         
         if (wasOff) {
+            gsap.set(lampGlow, { clearProps: 'all' });
+            gsap.set('.ray', { clearProps: 'all' });
+            
             gsap.fromTo(lampBulb, 
                 { scale: 1, filter: 'brightness(1)' },
                 { scale: 1.1, filter: 'brightness(1.3)', duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.out' }
@@ -156,9 +159,18 @@ function updateLampState(isOn) {
         lampStatus.classList.add('off');
         lampStatus.textContent = '🌑 Light is OFF';
         
+        gsap.killTweensOf(lampGlow);
+        gsap.killTweensOf('.ray');
+        gsap.set(lampGlow, { clearProps: 'all' });
+        gsap.set('.ray', { clearProps: 'all' });
+        
         if (!wasOff) {
-            gsap.to(lampGlow, { scale: 0, opacity: 0, duration: 0.3, ease: 'power2.in' });
-            gsap.to('.ray', { scaleY: 0, opacity: 0, duration: 0.2, stagger: 0.02 });
+            gsap.to(lampGlow, { scale: 0, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => {
+                gsap.set(lampGlow, { clearProps: 'all' });
+            }});
+            gsap.to('.ray', { scaleY: 0, opacity: 0, duration: 0.2, stagger: 0.02, onComplete: () => {
+                gsap.set('.ray', { clearProps: 'all' });
+            }});
         }
     }
 }
