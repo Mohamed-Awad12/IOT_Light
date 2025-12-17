@@ -43,7 +43,7 @@ async function fetchLightStatus() {
 
 function startPolling() {
     fetchLightStatus();
-    pollInterval = setInterval(fetchLightStatus, 3000);
+    pollInterval = setInterval(fetchLightStatus, 1000);
 }
 
 function stopPolling() {
