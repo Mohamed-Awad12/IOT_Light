@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IoT Light Control</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>IoT Light Control</h1>
         
-        <div class="lamp-container">
-            <div class="lamp">
+        <div class="lamp-container" id="lampContainer">
+            <canvas id="particleCanvas"></canvas>
+            <div class="lamp" id="lamp">
                 <div class="lamp-wire"></div>
                 <div class="lamp-fixture">
                     <div class="lamp-cap"></div>
@@ -21,6 +24,19 @@
                     <div class="bulb-glass"></div>
                     <div class="bulb-base"></div>
                     <div class="filament"></div>
+                </div>
+                <div class="pull-cord-container">
+                    <div class="pull-cord" id="pullCord">
+                        <div class="cord-string"></div>
+                        <div class="cord-string"></div>
+                        <div class="cord-string"></div>
+                        <div class="cord-handle" id="cordHandle">
+                            <div class="handle-cap"></div>
+                            <div class="handle-body"></div>
+                            <div class="handle-tip"></div>
+                        </div>
+                    </div>
+                    
                 </div>
                 <div class="lamp-glow" id="lampGlow"></div>
                 <div class="light-rays" id="lightRays">
