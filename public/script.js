@@ -375,10 +375,14 @@ let currentY = 0;
 let pullThreshold = 40;
 
 function toggleLampWithCord() {
-    if (isLampOn) {
-        sendCommand('turn off the lights');
-    } else {
+    const newState = !isLampOn;
+    
+    updateLampState(newState);
+    
+    if (newState) {
         sendCommand('turn on the lights');
+    } else {
+        sendCommand('turn off the lights');
     }
     
     gsap.to(pullCord, {
