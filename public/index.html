@@ -9,6 +9,31 @@
 <body>
     <div class="container">
         <h1>IoT Light Control</h1>
+        
+        <div class="lamp-container">
+            <div class="lamp">
+                <div class="lamp-wire"></div>
+                <div class="lamp-fixture">
+                    <div class="lamp-cap"></div>
+                    <div class="lamp-neck"></div>
+                </div>
+                <div class="lamp-bulb" id="lampBulb">
+                    <div class="bulb-glass"></div>
+                    <div class="bulb-base"></div>
+                    <div class="filament"></div>
+                </div>
+                <div class="lamp-glow" id="lampGlow"></div>
+                <div class="light-rays" id="lightRays">
+                    <div class="ray ray-1"></div>
+                    <div class="ray ray-2"></div>
+                    <div class="ray ray-3"></div>
+                    <div class="ray ray-4"></div>
+                    <div class="ray ray-5"></div>
+                </div>
+            </div>
+            <div class="lamp-status" id="lampStatus">Checking...</div>
+        </div>
+        
         <div class="button-group">
             <button id="turnOnBtn" class="btn btn-on">Turn On Lights</button>
             <button id="turnOffBtn" class="btn btn-off">Turn Off Lights</button>

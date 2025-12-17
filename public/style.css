@@ -139,3 +139,213 @@ h1 {
     color: #721c24;
     border-color: #f5c6cb;
 }
+
+.lamp-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+}
+
+.lamp {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lamp-wire {
+    width: 4px;
+    height: 40px;
+    background: linear-gradient(180deg, #2c2c2c 0%, #4a4a4a 100%);
+    border-radius: 2px;
+}
+
+.lamp-fixture {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lamp-cap {
+    width: 50px;
+    height: 15px;
+    background: linear-gradient(180deg, #5a5a5a 0%, #3a3a3a 50%, #2a2a2a 100%);
+    border-radius: 5px 5px 0 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.lamp-neck {
+    width: 30px;
+    height: 20px;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+}
+
+.lamp-bulb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.5s ease;
+}
+
+.bulb-base {
+    width: 28px;
+    height: 15px;
+    background: linear-gradient(180deg, #c0c0c0 0%, #a0a0a0 50%, #808080 100%);
+    border-radius: 3px;
+    z-index: 2;
+}
+
+.bulb-glass {
+    width: 60px;
+    height: 70px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(200,200,200,0.2) 100%);
+    border: 2px solid rgba(200,200,200,0.5);
+    border-radius: 50% 50% 45% 45%;
+    position: relative;
+    transition: all 0.5s ease;
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+}
+
+.lamp-bulb.on .bulb-glass {
+    background: radial-gradient(ellipse at center, #fffde7 0%, #ffeb3b 30%, #ffc107 60%, #ff9800 100%);
+    border-color: rgba(255,200,0,0.8);
+    box-shadow: 
+        inset 0 0 30px rgba(255,255,255,0.8),
+        0 0 20px rgba(255,200,0,0.6),
+        0 0 40px rgba(255,150,0,0.4);
+}
+
+.filament {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 30px;
+    opacity: 0.3;
+    transition: all 0.5s ease;
+}
+
+.filament::before,
+.filament::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 25px;
+    background: #666;
+    border-radius: 1px;
+}
+
+.filament::before {
+    left: 5px;
+    transform: skewX(-5deg);
+}
+
+.filament::after {
+    right: 5px;
+    transform: skewX(5deg);
+}
+
+.lamp-bulb.on .filament {
+    opacity: 1;
+}
+
+.lamp-bulb.on .filament::before,
+.lamp-bulb.on .filament::after {
+    background: #fff;
+    box-shadow: 0 0 10px #fff, 0 0 20px #ffeb3b;
+    animation: filamentGlow 0.1s ease-in-out infinite alternate;
+}
+
+@keyframes filamentGlow {
+    0% { opacity: 0.9; }
+    100% { opacity: 1; }
+}
+
+.lamp-glow {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(ellipse at center, rgba(255,200,0,0.4) 0%, rgba(255,150,0,0.2) 30%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+.lamp-glow.on {
+    opacity: 1;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.8; }
+    50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+}
+
+.light-rays {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 150px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+.light-rays.on {
+    opacity: 1;
+}
+
+.ray {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 3px;
+    height: 100px;
+    background: linear-gradient(180deg, rgba(255,200,0,0.6) 0%, transparent 100%);
+    transform-origin: top center;
+    border-radius: 2px;
+}
+
+.ray-1 { transform: translateX(-50%) rotate(-40deg); animation: rayFlicker 1.5s ease-in-out infinite; }
+.ray-2 { transform: translateX(-50%) rotate(-20deg); animation: rayFlicker 1.8s ease-in-out infinite 0.2s; }
+.ray-3 { transform: translateX(-50%) rotate(0deg); animation: rayFlicker 1.6s ease-in-out infinite 0.4s; }
+.ray-4 { transform: translateX(-50%) rotate(20deg); animation: rayFlicker 1.7s ease-in-out infinite 0.1s; }
+.ray-5 { transform: translateX(-50%) rotate(40deg); animation: rayFlicker 1.9s ease-in-out infinite 0.3s; }
+
+@keyframes rayFlicker {
+    0%, 100% { opacity: 0.6; height: 100px; }
+    50% { opacity: 1; height: 120px; }
+}
+
+.lamp-status {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #666;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: #f0f0f0;
+    transition: all 0.3s ease;
+}
+
+.lamp-status.on {
+    color: #f57c00;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    box-shadow: 0 2px 10px rgba(255,150,0,0.3);
+}
+
+.lamp-status.off {
+    color: #666;
+    background: #e0e0e0;
+}
