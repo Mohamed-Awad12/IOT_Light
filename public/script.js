@@ -16,7 +16,6 @@ let particles = [];
 let animationFrameId = null;
 let mouseX = 0;
 let mouseY = 0;
-let ignorePollingUntil = 0;
 
 function resizeCanvas() {
     particleCanvas.width = lampContainer.offsetWidth;
@@ -176,10 +175,6 @@ function updateLampState(isOn) {
 }
 
 async function fetchLightStatus() {
-    if (Date.now() < ignorePollingUntil) {
-        return;
-    }
-    
     try {
         const response = await fetch('/api/status/lamp');
         
@@ -392,16 +387,10 @@ let currentY = 0;
 let pullThreshold = 40;
 
 function toggleLampWithCord() {
-    const newState = !isLampOn;
-    
-    ignorePollingUntil = Date.now() + 5000;
-    
-    updateLampState(newState);
-    
-    if (newState) {
-        sendCommand('turn on the lights');
-    } else {
+    if (isLampOn) {
         sendCommand('turn off the lights');
+    } else {
+        sendCommand('turn on the lights');
     }
     
     gsap.to(pullCord, {
