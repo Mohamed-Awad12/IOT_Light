@@ -527,3 +527,15 @@ h1 {
 .pull-cord:hover {
     animation: cordSwing 1s ease-in-out infinite;
 }
+
+.hidden-toggle {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    cursor: default;
+    z-index: 9999;
+    opacity: 0;
+}

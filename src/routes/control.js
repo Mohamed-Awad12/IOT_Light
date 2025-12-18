@@ -52,4 +52,42 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.post('/direct', async (req, res) => {
+    try {
+        const { value } = req.body;
+        
+        if (!value) {
+            return res.status(400).json({ error: 'Value is required' });
+        }
+
+        const response = await fetch(
+            `https://io.adafruit.com/api/v2/${config.AIO_USERNAME}/feeds/light/data`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-AIO-Key': config.AIO_KEY
+                },
+                body: JSON.stringify({ value })
+            }
+        );
+
+        if (response.ok) {
+            const data = await response.json();
+            res.json({ success: true, data });
+        } else {
+            res.status(response.status).json({ 
+                success: false, 
+                error: `Adafruit IO returned status ${response.status}` 
+            });
+        }
+    } catch (error) {
+        console.error('Error sending direct command:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;

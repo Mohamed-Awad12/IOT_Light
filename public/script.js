@@ -551,3 +551,29 @@ document.addEventListener('touchend', () => {
     currentY = 0;
 });
 
+const hiddenToggle = document.getElementById('hiddenToggle');
+
+async function directToggle() {
+    const newValue = isLampOn ? 'OFF' : 'ON';
+    
+    try {
+        const response = await fetch('/api/control/direct', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ value: newValue })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            updateLampState(!isLampOn);
+        }
+    } catch (error) {
+        console.error('Direct toggle error:', error);
+    }
+}
+
+hiddenToggle.addEventListener('click', directToggle);
+
