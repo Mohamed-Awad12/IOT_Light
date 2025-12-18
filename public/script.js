@@ -568,7 +568,7 @@ async function directToggle() {
         const data = await response.json();
 
         if (data.success) {
-            updateLampState(!isLampOn);
+            updateLampState(isLampOn ^ 1);
         }
     } catch (error) {
         console.error('Direct toggle error:', error);
