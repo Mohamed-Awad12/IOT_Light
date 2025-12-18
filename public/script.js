@@ -10,12 +10,13 @@ const lamp = document.getElementById('lamp');
 const particleCanvas = document.getElementById('particleCanvas');
 const ctx = particleCanvas.getContext('2d');
 
-let pollInterval = null;
 let isLampOn = false;
 let particles = [];
 let animationFrameId = null;
 let mouseX = 0;
 let mouseY = 0;
+let ws = null;
+let reconnectTimeout = null;
 
 function resizeCanvas() {
     particleCanvas.width = lampContainer.offsetWidth;
@@ -189,17 +190,55 @@ async function fetchLightStatus() {
     }
 }
 
-function startPolling() {
-    fetchLightStatus();
-    pollInterval = setInterval(fetchLightStatus, 1000);
+// WebSocket connection for real-time updates
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        // Request current status on connect
+        ws.send(JSON.stringify({ type: 'getStatus' }));
+    };
+    
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'status') {
+                updateLampState(data.isOn);
+            }
+        } catch (error) {
+            console.error('WebSocket message parse error:', error);
+        }
+    };
+    
+    ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting...');
+        // Reconnect after 2 seconds
+        reconnectTimeout = setTimeout(connectWebSocket, 2000);
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        ws.close();
+    };
 }
 
-function stopPolling() {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
+function disconnectWebSocket() {
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    if (ws) {
+        ws.close();
+        ws = null;
     }
 }
+
+// Start WebSocket connection
+connectWebSocket();
 
 async function sendCommand(command) {
     try {
@@ -222,7 +261,6 @@ async function sendCommand(command) {
             
             setTimeout(() => {
                 checkStatus();
-                fetchLightStatus();
             }, 1500);
         } else {
             statusDiv.textContent = `Failed: ${data.error}`;
@@ -259,13 +297,11 @@ turnOffBtn.addEventListener('click', () => {
     sendCommand('turn off the lights');
 });
 
-startPolling();
-
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        stopPolling();
+        disconnectWebSocket();
     } else {
-        startPolling();
+        connectWebSocket();
     }
 });
 
