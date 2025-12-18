@@ -15,8 +15,7 @@ let particles = [];
 let animationFrameId = null;
 let mouseX = 0;
 let mouseY = 0;
-let ws = null;
-let reconnectTimeout = null;
+let pollInterval = null;
 
 function resizeCanvas() {
     particleCanvas.width = lampContainer.offsetWidth;
@@ -190,55 +189,20 @@ async function fetchLightStatus() {
     }
 }
 
-// WebSocket connection for real-time updates
-function connectWebSocket() {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
-    
-    ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-        console.log('WebSocket connected');
-        // Request current status on connect
-        ws.send(JSON.stringify({ type: 'getStatus' }));
-    };
-    
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'status') {
-                updateLampState(data.isOn);
-            }
-        } catch (error) {
-            console.error('WebSocket message parse error:', error);
-        }
-    };
-    
-    ws.onclose = () => {
-        console.log('WebSocket disconnected, reconnecting...');
-        // Reconnect after 2 seconds
-        reconnectTimeout = setTimeout(connectWebSocket, 2000);
-    };
-    
-    ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        ws.close();
-    };
+function startPolling() {
+    fetchLightStatus();
+    pollInterval = setInterval(fetchLightStatus, 1000);
 }
 
-function disconnectWebSocket() {
-    if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
-    }
-    if (ws) {
-        ws.close();
-        ws = null;
+function stopPolling() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
     }
 }
 
-// Start WebSocket connection
-connectWebSocket();
+// Start polling for status updates
+startPolling();
 
 async function sendCommand(command) {
     try {
@@ -299,9 +263,9 @@ turnOffBtn.addEventListener('click', () => {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        disconnectWebSocket();
+        stopPolling();
     } else {
-        connectWebSocket();
+        startPolling();
     }
 });
 
