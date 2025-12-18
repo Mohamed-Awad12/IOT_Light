@@ -554,7 +554,7 @@ document.addEventListener('touchend', () => {
 const hiddenToggle = document.getElementById('hiddenToggle');
 
 async function directToggle() {
-    const newValue = isLampOn;
+    const newValue = isLampOn ? '0' : '1';
     
     try {
         const response = await fetch('/api/control/direct', {
