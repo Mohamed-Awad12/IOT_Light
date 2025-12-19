@@ -203,10 +203,10 @@ document.addEventListener('touchmove', (e) => {
     pullCord.style.transform = `translateY(${currentY}px)`;
     
     if (currentY > pullThreshold) {
-        pullHint.textContent = 'Release to toggle!';
+      
         pullHint.classList.add('visible');
     } else {
-        pullHint.textContent = 'Pull to toggle';
+      
         pullHint.classList.remove('visible');
     }
 });
@@ -222,7 +222,7 @@ document.addEventListener('touchend', () => {
     pullCord.style.transform = '';
     
     pullHint.classList.remove('visible');
-    pullHint.textContent = 'Pull to toggle';
+    
     
     if (wasPulledEnough) {
         toggleLampWithCord();
