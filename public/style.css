@@ -448,11 +448,6 @@ h1 {
     flex-direction: column;
     align-items: center;
     filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.3));
-    transition: transform 0.2s ease;
-}
-
-.cord-handle:hover {
-    transform: scale(1.1);
 }
 
 .handle-cap {
@@ -517,10 +512,6 @@ h1 {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(2deg); }
     75% { transform: rotate(-2deg); }
-}
-
-.pull-cord:hover {
-    animation: cordSwing 1s ease-in-out infinite;
 }
 
 .hidden-toggle {
