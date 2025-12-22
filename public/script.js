@@ -5,11 +5,32 @@ const lampBulb = document.getElementById('lampBulb');
 const lampGlow = document.getElementById('lampGlow');
 const lightRays = document.getElementById('lightRays');
 const lampStatus = document.getElementById('lampStatus');
+const connectionStatus = document.getElementById('connectionStatus');
 
 let isLampOn = false;
 let pollInterval = null;
+let isConnected = false;
 
-function updateLampState(isOn) {
+// Connection status management
+function updateConnectionStatus(connected) {
+    isConnected = connected;
+    if (connectionStatus) {
+        const statusText = connectionStatus.querySelector('.status-text');
+        if (connected) {
+            connectionStatus.classList.add('connected');
+            connectionStatus.classList.remove('disconnected');
+            if (statusText) statusText.textContent = 'Connected';
+        } else {
+            connectionStatus.classList.remove('connected');
+            connectionStatus.classList.add('disconnected');
+            if (statusText) statusText.textContent = 'Disconnected';
+        }
+    }
+}
+
+// Enhanced lamp state update with animations
+function updateLampState(isOn, animate = true) {
+    const wasOn = isLampOn;
     isLampOn = isOn;
     
     if (isOn) {
@@ -19,6 +40,16 @@ function updateLampState(isOn) {
         lampStatus.classList.add('on');
         lampStatus.classList.remove('off');
         lampStatus.textContent = '💡 Light is ON';
+        
+        // Celebration effect when turning on
+        if (!wasOn && animate && typeof confetti !== 'undefined') {
+            confetti({
+                particleCount: 50,
+                spread: 60,
+                origin: { y: 0.6 },
+                colors: ['#ffc107', '#ff9800', '#ffeb3b', '#fff8e1']
+            });
+        }
     } else {
         lampBulb.classList.remove('on');
         lampGlow.classList.remove('on');
@@ -26,6 +57,14 @@ function updateLampState(isOn) {
         lampStatus.classList.remove('on');
         lampStatus.classList.add('off');
         lampStatus.textContent = '🌑 Light is OFF';
+    }
+    
+    // GSAP animation for smooth state change
+    if (animate && typeof gsap !== 'undefined') {
+        gsap.fromTo(lampBulb, 
+            { scale: 0.95 }, 
+            { scale: 1, duration: 0.3, ease: 'back.out(1.7)' }
+        );
     }
 }
 
@@ -35,12 +74,16 @@ async function fetchLightStatus() {
         
         if (response.ok) {
             const data = await response.json();
+            updateConnectionStatus(true);
             if (data.success) {
-                updateLampState(data.isOn);
+                updateLampState(data.isOn, false);
             }
+        } else {
+            updateConnectionStatus(false);
         }
     } catch (error) {
         console.error('Error fetching light status:', error);
+        updateConnectionStatus(false);
     }
 }
 
@@ -57,6 +100,7 @@ function stopPolling() {
 }
 
 startPolling();
+
 
 async function sendCommand(command) {
     try {
