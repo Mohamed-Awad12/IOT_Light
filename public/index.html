@@ -3,26 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0a0a1a">
-    <meta name="description" content="Smart IoT Light Control - Control your lights from anywhere">
     <title>IoT Light Control</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <div class="bg-particles" id="bgParticles"></div>
     <div class="container">
-        <div class="header">
-            <h1>IoT Light Control</h1>
-            <div class="connection-status" id="connectionStatus">
-                <span class="status-dot"></span>
-                <span class="status-text">Connecting...</span>
-            </div>
-        </div>
+        <h1>IoT Light Control</h1>
         
         <div class="lamp-container" id="lampContainer">
             <canvas id="particleCanvas"></canvas>
