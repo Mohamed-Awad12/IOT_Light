@@ -1,7 +1,7 @@
 
 module.exports = {
     PORT: process.env.PORT || 3000,
-    WEBHOOK_URL: 'https://awad123612.app.n8n.cloud/webhook/google-assistant',
+    WEBHOOK_URL: process.env.WEBHOOK_URL,
     HISTORY_USERNAME: process.env.HISTORY_USERNAME,
     HISTORY_PASSWORD: process.env.HISTORY_PASSWORD,
     AIO_USERNAME: process.env.AIO_USERNAME,
